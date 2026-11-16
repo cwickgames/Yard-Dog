@@ -482,7 +482,7 @@ const pick=a=>a[Math.floor(Math.random()*a.length)];
 function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
 function fmt(n){const a=Math.abs(n),s=n<0?'-':'';if(a>=1e9)return s+(a/1e9).toFixed(2)+'B';if(a>=1e6)return s+(a/1e6).toFixed(2)+'M';if(a>=1e3)return s+(a/1e3).toFixed(1)+'K';return s+Math.round(a)}
 const $m=n=>(n<0?'-$':'$')+fmt(Math.abs(n));
-const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'''}[c]));
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const yearOf=w=>2000+Math.floor(w/52);
 const monthOf=w=>Math.min(11,Math.floor((w%52)/52*12));
@@ -783,11 +783,11 @@ function orderWeek(){let cap=deliverCap();let icap=installCap();const ic0=icap;c
 function completeOrder(o){S.orders=S.orders.filter(x=>x!==o);if(o.inst){S.instDone=(S.instDone||0)+1;const I=S.inst=S.inst||{};const y=fyOf(S.week);const Y=I[y]=I[y]||{jobs:0,labor:0,cb:0,cbCost:0,late:0};Y.jobs++;Y.labor+=o.labor||0;if(S.week>o.dueW)Y.late++;if(Math.random()<cbRate()){const c=Math.round((o.labor||o.price*0.3)*0.06);Y.cb++;Y.cbCost+=c;spend(c);const A=acct(o.acct);if(A)A.rel=Math.max(0,A.rel-5);news('🔧 Callback on '+o.name+': a crew went back to fix a few posts ('+$m(c)+').')}}const late=S.week>o.dueW;const A=acct(o.acct);const F=fys();
  led('rev',o.price);led('cogs',o.heldCost+(o.costAdj||0));spend(o.extra,'opex');lstat(o.line,o.price,o.price-o.heldCost-o.extra,o.su);
  if(A){A.spend+=o.price;A.rel=clamp(A.rel+(late?-10:8),0,100)}
- if(late){F.late++;S.rep=Math.max(0,S.rep-o.su*1.5);news('⏰ Delivered '+o.name+' late. '+(A?A.name:'The customer')+' is unhappy.')}else{F.on++;S.otd++;S.rep+=o.su*2.5*integFans()*(has('m_brand')?1.2:1)*Math.pow(1.1,tierN('rp',5));news('✅ Delivered '+o.name+' on time. Invoiced '+$m(o.price)+'.')}
+ if(late){F.late++;S.rep=Math.max(0,S.rep-o.su*1.5);news('⏰ Delivered '+o.name+' late. '+(A?https://url.us.m.mimecastprotect.com/s/pzQjCKr68Dt9OkPRiMfBYt51_0P?domain=a.name'The customer')+' is unhappy.')}else{F.on++;S.otd++;S.rep+=o.su*2.5*integFans()*(has('m_brand')?1.2:1)*Math.pow(1.1,tierN('rp',5));news('✅ Delivered '+o.name+' on time. Invoiced '+$m(o.price)+'.')}
  const wk=TERMS[o.terms].wk;if(!wk)S.money+=o.price;else S.ar.push({id:o.id,amt:o.price,due:S.week+wk,name:o.name,acct:o.acct,terms:o.terms})}
 function arWeek(){const rec=econ(yearOf(S.week))<0.85;S.ar=S.ar.filter(x=>{if(S.week<x.due)return true;const A=acct(x.acct);
   const risk=(TERMS[x.terms].risk||0)*fx('badDebt')*(rec?2.2:1)*(has('t_credit')?0.5:1)*Math.pow(0.7,tierN('ci',2))*(A&&A.rel>60?0.6:1);
-  if(Math.random()<risk){led('opex',x.amt);news('💸 '+(A?A.name:'A customer')+' went under owing '+$m(x.amt)+'.');if(A){S.accts=S.accts.filter(a=>a!==A);S.rfqs=S.rfqs.filter(r=>r.acct!==A.id||inBid(r.id)||(S.draft&&S.draft.rfq===r.id))}modal('💸 Bad Debt',`<p><b>${esc(A?A.name:'A customer')}</b> closed their doors and won't pay the <b>${$m(x.amt)}</b> invoice for ${esc(x.name)}.</p><p class="mut small">Net terms win bids, but they carry risk, especially in a downturn. A Credit Department cuts the odds.</p>`);return false}
+  if(Math.random()<risk){led('opex',x.amt);news('💸 '+(A?https://url.us.m.mimecastprotect.com/s/pzQjCKr68Dt9OkPRiMfBYt51_0P?domain=a.name'A customer')+' went under owing '+$m(x.amt)+'.');if(A){S.accts=S.accts.filter(a=>a!==A);S.rfqs=S.rfqs.filter(r=>r.acct!==A.id||inBid(r.id)||(S.draft&&S.draft.rfq===r.id))}modal('💸 Bad Debt',`<p><b>${esc(A?https://url.us.m.mimecastprotect.com/s/pzQjCKr68Dt9OkPRiMfBYt51_0P?domain=a.name'A customer')}</b> closed their doors and won't pay the <b>${$m(x.amt)}</b> invoice for ${esc(x.name)}.</p><p class="mut small">Net terms win bids, but they carry risk, especially in a downturn. A Credit Department cuts the odds.</p>`);return false}
   S.money+=x.amt;return false})}
 const arTotal=()=>S.ar.reduce((a,x)=>a+x.amt,0);
 const backlog=()=>S.orders.reduce((a,o)=>a+o.left,0);
@@ -843,7 +843,7 @@ const AMBS=[
  {k:'rich',ic:'💰',n:'Retire Rich',d:'Build the company\'s net worth to $25M.',perk:'Credit line +15%',fx:{loan:1.15},story:'to never have to worry about money again',p:()=>clamp(nwOf()/25e6,0,1),t:()=>nwOf()>=25e6},
  {k:'best',ic:'🏆',n:'Best in the Business',d:'Win Supplier of the Year three times.',perk:'Reputation grows 8% faster',fx:{rep:1.08},story:'to be the yard everyone holds up as the standard',p:()=>Math.min(1,S.goty/3),t:()=>S.goty>=3},
  {k:'honest',ic:'🤝',n:'Do It Right',d:'Reach 90 integrity after 10 years in business.',perk:'Start with +10 integrity',story:'to prove you can win without cutting corners',p:()=>(Math.min(1,S.integrity/90)+Math.min(1,yrsIn()/10))/2,t:()=>S.integrity>=90&&yrsIn()>=10},
- {k:'national',ic:'🏢',n:'Coast to Coast',d:'Grow into a Corporate Campus.',perk:'Know-how +5%',fx:{rp:1.05},story:'to turn a rented lot into a national name',p:()=>S.office/6,t:()=>S.office>=6},
+ {k:'national',ic:'🏢',n:'Coast to Coast',d:'Grow into a Corporate Campus.',perk:'Know-how +5%',fx:{rp:1.05},story:'to turn a rented lot into a national name',p:()=>https://url.us.m.mimecastprotect.com/s/TOHLCL9PZEtXK2VzsqhD1tyk5rC?domain=s.office>S.office>=6},
  {k:'crew',ic:'👷',n:'Build a Crew',d:'Lead 30 people with an average skill of 150.',perk:'Paid training +10%',fx:{train:1.1},story:'to build the best crew in the trade',p:()=>{const n=S.staff.length;const av=S.staff.reduce((a,s)=>a+CATS.reduce((b,c)=>b+s.sk[c.k],0)/5,0)/Math.max(1,n);return (Math.min(1,n/30)+Math.min(1,av/150))/2},t:()=>{const n=S.staff.length;const av=S.staff.reduce((a,s)=>a+CATS.reduce((b,c)=>b+s.sk[c.k],0)/5,0)/Math.max(1,n);return n>=30&&av>=150}},
  {k:'legacy',ic:'🌳',n:'Family Legacy',d:'Keep 8 people on the crew for 5+ years.',perk:'People are 40% less likely to quit',fx:{quit:0.6},story:'to build a place people never want to leave',p:()=>Math.min(1,S.staff.filter(s=>!s.founder&&S.week-(s.hiredW||0)>=260).length/8),t:()=>S.staff.filter(s=>!s.founder&&S.week-(s.hiredW||0)>=260).length>=8}];
 const LOOKS=[{n:'🦺 Yard Boss',v:{outfit:'vest',acc:'hardhat',shirt:6,beard:'stubble'}},{n:'👔 Sales Sharp',v:{outfit:'polo',acc:'none',shirt:0,beard:'none',hs:'side'}},{n:'🧓 Old-Timer',v:{outfit:'flannel',acc:'cap',shirt:1,beard:'mustache',hc:6}},{n:'🤠 Rancher',v:{outfit:'jacket',acc:'none',shirt:4,beard:'full'}},{n:'📐 Estimator',v:{outfit:'sweater',acc:'pencil',shirt:2}},{n:'💼 The Owner',v:{outfit:'blazer',acc:'glasses',shirt:6,beard:'none'}},{n:'❄️ Winter Crew',v:{outfit:'jacket',acc:'beanie',shirt:3}},{n:'🥽 Safety First',v:{outfit:'vest',acc:'safety',shirt:7}}];
@@ -1839,7 +1839,7 @@ function drawOffice(ts){OFF.raf=0;if(!S||O3.active)return;const cv=document.getE
 function officeClick(e){const cv=document.getElementById('office');const r=cv.getBoundingClientRect();const x=e.clientX-r.left,y=e.clientY-r.top;let best=null,bd=1e9;OFF.hits.forEach(h=>{const d=Math.hypot(h.x-x,h.y-y);if(d<h.r&&d<bd){bd=d;best=h}});if(best)openProfile(best.id)}
 /* ================= THREE.JS OFFICE ================= */
 const O3={ok:null,active:false,sig:'',rigs:{},yaw:0.785,pitch:0.62,zoom:1,tYaw:0.785,tPitch:0.62,tZoom:1,ptrs:new Map(),drag:null,tex:{},mats:{},frame:0};
-function load3D(){if(window.THREE||O3.loading)return;O3.loading=true;const sc=document.createElement('script');const CDN3='https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';sc.src='three.min.js';sc.onload=()=>{O3.loading=false;if(S)officeShow(true)};sc.onerror=()=>{if(sc.src.indexOf('cdnjs')<0){sc.remove();const s2=document.createElement('script');s2.src=CDN3;s2.onload=sc.onload;s2.onerror=()=>{O3.ok=false};document.head.appendChild(s2)}else O3.ok=false};document.head.appendChild(sc)}
+function load3D(){if(window.THREE||O3.loading)return;O3.loading=true;const sc=document.createElement('script');const CDN3='https://url.us.m.mimecastprotect.com/s/Y80pCM89ZGS9XYDniJiZAt8bINq?domain=cdnjs.cloudflare.com';sc.src='three.min.js';sc.onload=()=>{O3.loading=false;if(S)officeShow(true)};sc.onerror=()=>{if(sc.src.indexOf('cdnjs')<0){sc.remove();const s2=document.createElement('script');s2.src=CDN3;s2.onload=sc.onload;s2.onerror=()=>{O3.ok=false};document.head.appendChild(s2)}else O3.ok=false};document.head.appendChild(sc)}
 function want3D(){return S&&S.view3d!==false&&window.THREE&&O3.ok!==false}
 function init3D(){if(O3.renderer)return true;try{const T=THREE;const cv=document.getElementById('office3d');
   const r=new T.WebGLRenderer({canvas:cv,antialias:true,alpha:false,powerPreference:'high-performance'});r.setPixelRatio(Math.min(1.75,window.devicePixelRatio||1));r.shadowMap.enabled=true;r.shadowMap.type=T.PCFSoftShadowMap;r.outputEncoding=T.sRGBEncoding;r.toneMapping=T.ACESFilmicToneMapping;r.toneMappingExposure=1.2;
@@ -2593,7 +2593,7 @@ function buildYard(room,N){const T=THREE;const X0=N+0.6,YD=Math.max(8,N*0.8),X1=
  for(let c=0;c<=cols;c++)bx(room,0.05,0.012,rows*bayD,'#ffd23f',X0+0.3+c*bayW,0.006,0.4+rows*bayD/2).castShadow=false;
  ls.forEach((k,i)=>{const col=Math.floor(i/rows),row=i%rows;const [cx,cz]=P(col,row);const f=yFill(k),kind=YKIND[k]||'box',cc=YCOL[k]||'#c98a4b';yardBay(room,k,kind,cc,f,cx,cz,bayW-0.35,bayD-0.3,row)});
  // forklift + truck in the front lane
- yardTruck(room,X1-2.0,laneZ+0.62);if(typeof yardExtras3==='function')yardExtras3(room,N,X0,X1,laneZ);else yardForklift(room,X0+1.1,laneZ+1.05);
+ O3.ytk=yardTruck(room,X1-2.0,laneZ+0.62);if(typeof yardExtras3==='function')yardExtras3(room,N,X0,X1,laneZ);else yardForklift(room,X0+1.1,laneZ+1.05);
  // light pole
  cyl(room,0.05,0.07,3.6,'#5a6068',X1-0.3,1.8,0.35,{metalness:0.5},8);bx(room,0.5,0.1,0.25,'#2b2b2b',X1-0.5,3.6,0.35);
  const lp=bx(room,0.4,0.03,0.18,'#fff6c4',X1-0.5,3.54,0.35,{emissive:new T.Color('#ffe9a0'),emissiveIntensity:0.8});lp.castShadow=false}
@@ -2619,7 +2619,7 @@ function yardTruck(room,x,z){const T=THREE;const g=new T.Group();g.position.set(
  bx(g,1.0,0.95,1.05,'#f4f2ea',1.25,0.85,0);bx(g,0.06,0.42,0.95,'#9fd3ff',1.76,1.05,0,{metalness:0.3,roughness:0.1});bx(g,1.02,0.14,1.07,lc,1.25,0.66,0);
  bx(g,2.6,0.16,1.15,'#55585f',-0.55,0.62,0);bx(g,3.6,0.18,0.5,'#2b2b2b',0.1,0.42,0);
  [[1.35,0.5],[1.35,-0.5],[-1.05,0.5],[-1.05,-0.5],[-1.5,0.5],[-1.5,-0.5]].forEach(([wx,wz])=>{const w=cyl(g,0.25,0.25,0.18,'#1c1c20',wx,0.25,wz,{},16);w.rotation.x=Math.PI/2});
- {bx(g,2.2,0.32,0.95,'#c98a4b',-0.6,0.86,0,{roughness:0.85});bx(g,2.21,0.03,0.96,'#e8e2d0',-0.6,0.86,0)}}
+ {bx(g,2.2,0.32,0.95,'#c98a4b',-0.6,0.86,0,{roughness:0.85});bx(g,2.21,0.03,0.96,'#e8e2d0',-0.6,0.86,0)}return g}
 
 /* ================= BUSINESS REALISM ================= */
 /* ---------- 1. Purchase orders with lead times ---------- */
@@ -2708,14 +2708,14 @@ function kpiWeek(){const m=monthOf(S.week);S.mtd=S.mtd||{m,rev:totL('rev'),cogs:
  S.months=S.months||[];const ly=S.months.find(x=>x.m===pm&&x.y===yearOf(S.week-4)-1);const budget=Math.round(ly?ly.rev*1.08:(S.months.length?S.months.slice(-3).reduce((a,x)=>a+x.rev,0)/Math.min(3,S.months.length)*1.03:rev));
  const gm=rev?(rev-cogs)/rev:0;const iv=invVal();const turns=iv?cogs*12/iv:0;const dso=rev?arTotal()/(rev/30):0;const dead=S.lines.filter(k=>S.inv[k].u>(S.tgt[k]||20)*3).length;
  const rec={y:yearOf(S.week-4),m:pm,rev,budget,gm,turns,dso,dead,net:rev-cogs-opex};S.months.push(rec);if(S.months.length>36)S.months.shift();
- const hits=(rev>=budget?1:0)+(gm>=0.25?1:0)+(turns>=4?1:0)+(dso<=40?1:0);rec.hits=hits;
+ const hits=(rev>=budget?1:0)+(gm>=0.22?1:0)+(turns>=4?1:0)+(dso<=40?1:0);rec.hits=hits;
  news(`📊 ${MONTHS[pm]} scorecard: sales ${$m(rev)} vs budget ${$m(budget)} · ${hits}/4 KPIs hit.`);
  if([2,5,8,11].includes(pm)&&S.months.length>=3){const q=S.months.slice(-3);const qh=q.reduce((a,x)=>a+x.hits,0);
   if(qh>=9){S.rp+=25;S.staff.forEach(s=>moraleAdd(s,6));modal('📊 Quarterly Review',`<p>Strong quarter: <b>${qh}/12</b> KPIs hit. The team earned a quarterly bonus pool.</p><p class="mut small">+25 know-how · everyone +6 morale</p>`)}
   else if(qh<=4){S.staff.forEach(s=>moraleAdd(s,-3));modal('📊 Quarterly Review',`<p>Rough quarter: only <b>${qh}/12</b> KPIs hit. ${S.loan?'Linda at the bank wants a word about your covenants.':'Time to tighten up.'}</p><p class="mut small">Everyone −3 morale. Check margins, inventory turns and collections.</p>`)}}}
 function kpiCard(){const M=(S.months||[]).slice(-1)[0];if(!M)return `<div class="card small">📊 Your first monthly scorecard arrives at the start of next month.</div>`;
  const row=(n,v,ok,t)=>`<div class="between small" style="padding:4px 0"><span>${ok?'✅':'⚠️'} ${n}</span><span><b>${v}</b> <span class="mut">${t}</span></span></div>`;
- return `<div class="card"><h2>📊 ${MONTHS[M.m]} scorecard</h2>${row('Sales vs budget',$m(M.rev),M.rev>=M.budget,'budget '+$m(M.budget))}${row('Gross margin',pct(M.gm),M.gm>=0.25,'goal 25%+')}${row('Inventory turns',M.turns.toFixed(1)+'×',M.turns>=4,'goal 4×+ a year')}${row('Days to collect',Math.round(M.dso)+' days',M.dso<=40,'goal under 40')}${row('Overstocked lines',M.dead,M.dead===0,'stock over 3× target')}<p class="mut small" style="margin-bottom:0">Hit 9 of 12 in a quarter for a bonus pool. Budget is last year's month +8%.</p></div>`}
+ return `<div class="card"><h2>📊 ${MONTHS[M.m]} scorecard</h2>${row('Sales vs budget',$m(M.rev),M.rev>=M.budget,'budget '+$m(M.budget))}${row('Gross margin',pct(M.gm),M.gm>=0.22,'goal 22%+')}${row('Inventory turns',M.turns.toFixed(1)+'×',M.turns>=4,'goal 4×+ a year')}${row('Days to collect',Math.round(M.dso)+' days',M.dso<=40,'goal under 40')}${row('Overstocked lines',M.dead,M.dead===0,'stock over 3× target')}<p class="mut small" style="margin-bottom:0">Hit 9 of 12 in a quarter for a bonus pool. Budget is last year's month +8%.</p></div>`}
 
 /* ---------- 7. Vendor rebates ---------- */
 function rebAdd(c,p){const y=fyOf(S.week);S.reb=S.reb||{};S.reb[y]=S.reb[y]||{};S.reb[y][c]=(S.reb[y][c]||0)+p}
@@ -2835,7 +2835,7 @@ function estShare(i,f,mgr,plan){const C=S.corp,R=MT(i).reg;const rm=C&&C.rms[R];
 const AVGM={sk:{sales:100,product:100,service:100,ops:100,logistics:100},lead:100,judg:100,sal:9e3};
 const STRM={sk:{sales:165,product:150,service:165,ops:165,logistics:140},lead:165,judg:160,sal:12e3};
 function brY(i,f,mgr,plan,sh){const M=MT(i),P=PLANS[plan||'std'],C=S.corp;const m=mgr||null;const share=sh!=null?sh:estShare(i,f,m||AVGM,plan);
- const rev=Math.min(mMarket(i)*share,CFAC[f].cap*520e3*infl()*P.cap);const mm=m||AVGM;const gm=0.222+(mm.sk.product+mm.sk.ops)/3200+(C&&C.dirs.ops?0.01+C.dirs.ops.lead/20000:0);
+ const rev=Math.min(mMarket(i)*share,CFAC[f].cap*520e3*infl()*P.cap);const mm=m||AVGM;const gm=0.185+(mm.sk.product+mm.sk.ops)/3200+(C&&C.dirs.ops?0.01+C.dirs.ops.lead/20000:0);
  const team=clamp(Math.round(rev/(500e3*P.rpe*infl())),P.min,CFAC[f].cap);const lean=clamp(1.18-mm.sk.ops/560,0.8,1.12);
  const opex=(team*52e3*infl()+CFAC[f].rent*52*M.ci*infl()+rev*0.04+60e3*infl())*lean+(m?m.sal*12:0);return {rev,gm,team,opex,net:rev*gm-opex,share}}
 function mEst(i,f,mgr,plan){f=f||'std';const ref=mgr||Object.assign({},AVGM,{sal:AVGM.sal*infl()});const Y=brY(i,f,ref,plan,null);const cost=facCost(f,i);return {mk:mMarket(i),sh:Y.share,rev:Y.rev,net:Y.net,team:Y.team,cost,pay:Y.net>0?cost/Y.net:99}}
@@ -3364,7 +3364,7 @@ function beardShell(P,a,seg,beardM){const bd=a.beard;if(!['full','goatee','chins
  deform(g,(x,y,z)=>beardPos(P,bd,x,y,z));const mesh=new THREE.Mesh(g,beardM);mesh.castShadow=true;return mesh}
 // company logo as a printed patch: the same shield/circle/badge/hex + emblem as the 2D logo
 function curLogo(){return (typeof S!=='undefined'&&S&&S.founder&&S.founder.logo)||(typeof SET!=='undefined'&&SET&&SET.logo)||null}
-function logoTex3(L){const t=logoTex3a(L);if(!t.userData.svg&&typeof Image!=='undefined'&&typeof logoSvg==='function'){t.userData.svg=1;try{const svg=logoSvg({logo:L},128).replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" ');const im=new Image();im.onload=()=>{const cv=t.image;if(!cv||!cv.getContext)return;const g=cv.getContext('2d');g.clearRect(0,0,cv.width,cv.height);g.drawImage(im,0,0,cv.width,cv.height);t.needsUpdate=true};im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)}catch(e){}}return t}
+function logoTex3(L){const t=logoTex3a(L);if(!t.userData.svg&&typeof Image!=='undefined'&&typeof logoSvg==='function'){t.userData.svg=1;try{const svg=logoSvg({logo:L},128).replace('<svg ','<svg xmlns="https://url.us.m.mimecastprotect.com/s/xOHVCNk8OJF97pJgiRs28tyg3Ze?domain=w3.org" ');const im=new Image();im.onload=()=>{const cv=t.image;if(!cv||!cv.getContext)return;const g=cv.getContext('2d');g.clearRect(0,0,cv.width,cv.height);g.drawImage(im,0,0,cv.width,cv.height);t.needsUpdate=true};im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)}catch(e){}}return t}
 function logoTex3a(L){const c=LOGOC[L.c%LOGOC.length];return tex3('logo3:'+L.c+L.sh+L.e,128,128,(g,w,h)=>{g.clearRect(0,0,w,h);const d={shield:'M50 4L92 18V50C92 74 72 90 50 98C28 90 8 74 8 50V18Z',circle:'M50 4A46 46 0 1 1 50 96A46 46 0 1 1 50 4Z',badge:'M18 4H82Q96 4 96 18V82Q96 96 82 96H18Q4 96 4 82V18Q4 4 18 4Z',hex:'M50 3L93 27V73L50 97L7 73V27Z'}[L.sh]||'M50 4A46 46 0 1 1 50 96A46 46 0 1 1 50 4Z';
  g.save();g.scale(w/100,h/100);const P2=typeof Path2D!=='undefined'?new Path2D(d):null;const gr=g.createLinearGradient(0,0,0,100);gr.addColorStop(0,shade(c,1.3));gr.addColorStop(1,shade(c,0.7));g.fillStyle=gr;g.strokeStyle=shade(c,0.45);g.lineWidth=4;
  if(P2){g.fill(P2);g.stroke(P2)}else{g.beginPath();g.arc(50,50,46,0,7);g.fill();g.stroke()}g.font='44px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(L.e,50,L.sh==='shield'?52:54);g.restore()})}
@@ -4233,12 +4233,12 @@ const EV_YARD=[
  {id:'spec',t:'📐 An architect calls',h:()=>`<p>A landscape architect wants help writing fence specs for a new library. It's unpaid, but your products would be written in.</p>`,c:()=>[choice('Write the specs','good',()=>{S.rp+=20;repPct(0.015);addAccts(['muni','comm'],1)},'Takes a week of your time · +research, +1 public account'),choice('Too busy','sec',()=>{},'')]},
  {id:'theft',t:'🚨 Someone hit the yard',h:()=>`<p>Overnight someone cut the chain and drove off with a trailer load of material.</p>`,c:()=>[choice('Cameras and lighting','good',()=>{spend(scaleC(14e3));S.lines.forEach(k=>S.inv[k].u=Math.floor(S.inv[k].u*0.98))},'$14K · stops it from happening again'),choice('Night guard','sec',()=>{spend(scaleC(3e3));S.lines.forEach(k=>S.inv[k].u=Math.floor(S.inv[k].u*0.98))},'$3K a month for a while'),choice('Eat the loss','bad',()=>{S.lines.forEach(k=>S.inv[k].u=Math.floor(S.inv[k].u*0.94))},'It could happen again')]},
  {id:'ffa',t:'🐄 The ag program asks',h:()=>`<p>The high school ag program needs fence for its new livestock barn. They can't pay much.</p>`,c:()=>[choice('Donate it all','good',()=>{spend(scaleC(5e3));repPct(0.03);integ(4);addAccts(['ranch'],2)},'Hometown hero · ranchers notice'),choice('Sell it at cost','sec',()=>{repPct(0.01)},''),choice('Pass','bad',()=>{},'')]},
- {id:'poach',t:'🏬 BuildMart wants your counter lead',h:()=>{const s=S.staff.filter(x=>x.rk==='counter'||x.rk==='estimator')[0];return `<p>The big-box pro desk offered <b>${esc(s?s.name:'your best counter person')}</b> 20% more to come run their counter.</p>`},c:()=>{const s=S.staff.filter(x=>x.rk==='counter'||x.rk==='estimator')[0];return [choice('Match it','good',()=>{if(s){s.salary=Math.round(s.salary*1.2/100)*100;moraleAdd(s,15)}},'+20% salary · they stay'),choice('Promote them instead','sec',()=>{if(s){s.salary=Math.round(s.salary*1.1/100)*100;moraleAdd(s,25);s.lead=(s.lead||80)+15}},'+10% and a title · leadership grows'),choice('Let them go','bad',()=>{if(s){S.staff=S.staff.filter(x=>x!==s);news('🚪 '+s.name+' left for the big-box pro desk.')}},'')]}},
+ {id:'poach',t:'🏬 BuildMart wants your counter lead',h:()=>{const s=S.staff.filter(x=>x.rk==='counter'||x.rk==='estimator')[0];return `<p>The big-box pro desk offered <b>${esc(s?https://url.us.m.mimecastprotect.com/s/wydGCOYZgKhwnklBUPtBWtGERTA?domain=s.name'your best counter person')}</b> 20% more to come run their counter.</p>`},c:()=>{const s=S.staff.filter(x=>x.rk==='counter'||x.rk==='estimator')[0];return [choice('Match it','good',()=>{if(s){s.salary=Math.round(s.salary*1.2/100)*100;moraleAdd(s,15)}},'+20% salary   they stay'),choice('Promote them instead','sec',()=>{if(s){s.salary=Math.round(s.salary*1.1/100)*100;moraleAdd(s,25);s.lead=(s.lead||80)+15}},'+10% and a title   leadership grows'),choice('Let them go','bad',()=>{if(s){S.staff=S.staff.filter(x=>x!==s);news('🚪 '+s.name+' left for the big-box pro desk.')}},'')]}},
  {id:'slip',t:'⚠️ Slip on the ice',h:()=>`<p>A customer slipped in the yard and is threatening to sue over a sprained wrist.</p>`,c:()=>[choice('Settle quietly','sec',()=>{spend(scaleC(12e3))},'$12K · done'),choice('Fight it','bad',()=>{if(Math.random()<0.55){spend(scaleC(6e3));news('⚖️ The slip-and-fall claim was dismissed.')}else{spend(scaleC(45e3));news('⚖️ Lost the slip-and-fall case: $45K.')}},'Lawyers: could cost more or less'),choice('Settle + salt and mats everywhere','good',()=>{spend(scaleC(15e3));integ(2)},'$15K · fewer claims later')]},
  {id:'liquid',t:'📦 A liquidator calls',h:()=>`<p>A failed competitor's container of no-name vinyl panels is for sale at 40% of normal cost.</p>`,c:()=>[choice('Buy the container','sec',()=>{spend(scaleC(18e3));const k=anyLine(k=>/vinyl|compfence/.test(k));S.inv[k].u+=60;if(Math.random()<0.35){repPct(-0.02);news('📦 The liquidated vinyl started yellowing. A few customers want refunds.')}},'Cheap stock · quality is a gamble'),choice('Pass','good',()=>{integ(1)},'')]},
  {id:'hail',t:'🌨️ Hailstorm',h:()=>`<p>Golf-ball hail shredded fences and decks across town. The phones won't stop.</p>`,c:()=>[choice('Overtime for everyone','good',()=>{spend(scaleC(8e3));S.money+=scaleC(26e3);crew(-6)},'+Sales · tired crew'),choice('Bring in temps','sec',()=>{spend(scaleC(12e3));S.money+=scaleC(24e3)},''),choice('Business as usual','bad',()=>{S.money+=scaleC(9e3);repPct(-0.01)},'Customers wait · some go elsewhere')]},
  {id:'match',t:'🤝 "Match their price"',h:()=>`<p>Your biggest contractor got a quote 6% under yours from a rival and wants you to match it on everything this year.</p>`,c:()=>[choice('Match it','sec',()=>{spend(scaleC(16e3));S.accts.slice(0,2).forEach(a=>a.rel=Math.min(100,a.rel+15))},'−Margin · keeps the account'),choice('Hold, sell on service','good',()=>{if(Math.random()<0.6){repPct(0.01);news('🤝 The contractor stayed: "Nobody delivers like you do."')}else{const a=S.accts[0];if(a)a.rel=Math.max(0,a.rel-30);news('🤝 The contractor took half their work to the rival.')}},'Usually works'),choice('Match only on chain link','sec',()=>{spend(scaleC(6e3))},'Meet in the middle')]},
- {id:'feud',t:'😤 Crew drama',h:()=>{const a=S.staff.filter(s=>!s.founder);const x=a[0],y=a[1];return `<p><b>${esc(x?x.name:'Two of your people')}</b> and <b>${esc(y?y.name:'')}</b> aren't speaking after an argument over who loads first.</p>`},c:()=>[choice('Sit them down together','good',()=>{crew(3)},'Takes an afternoon'),choice('Split their shifts','sec',()=>{},''),choice('Let them sort it out','bad',()=>{crew(-4)},'')]},
+ {id:'feud',t:'😤 Crew drama',h:()=>{const a=S.staff.filter(s=>!s.founder);const x=a[0],y=a[1];return `<p><b>${esc(x?https://url.us.m.mimecastprotect.com/s/lRTICPNYjLUZWn9LTrulZtxVSXI?domain=x.name'Two of your people')}</b> and <b>${esc(y?y.name:'')}</b> aren't speaking after an argument over who loads first.</p>`},c:()=>[choice('Sit them down together','good',()=>{crew(3)},'Takes an afternoon'),choice('Split their shifts','sec',()=>{},''),choice('Let them sort it out','bad',()=>{crew(-4)},'')]},
  {id:'radio',t:'📻 Local radio spot',h:()=>`<p>The morning show offers a season of "Fence Tip Fridays" sponsorships.</p>`,c:()=>[choice('Sponsor it','good',()=>{spend(scaleC(9e3));repPct(0.025)},'$9K · +reputation'),choice('Pass','sec',()=>{},'')]}];
 // ---- CEO decisions ----
 const EV_CEO=[
@@ -4249,7 +4249,7 @@ const EV_CEO=[
  {id:'ransom',t:'💻 Ransomware',h:()=>`<p>Every computer at HQ shows the same red screen. Orders and invoicing are down company-wide.</p>`,c:()=>[choice('Restore from backups','good',()=>{spend(scaleC(80e3));brShare(-0.01)},'A week of chaos · no deal with criminals'),choice('Pay the ransom','bad',()=>{spend(scaleC(350e3));integ(-4)},'Back up tomorrow · and on their list')]},
  {id:'bigbox',t:'🏬 Big-box partnership',h:()=>`<p>A national home center wants you to supply its pro desks in your regions: huge volume, thin margins and strict delivery windows.</p>`,c:()=>[choice('Sign it','sec',()=>{S.money+=scaleC(400e3);brShare(-0.02);repPct(0.02)},'+Volume · your contractors notice who you\'re supplying'),choice('Decline','good',()=>{brShare(0.01);integ(2)},'Stay the contractor\'s yard')]},
  {id:'fsc',t:'🌲 Certified lumber program',h:()=>`<p>Cities and universities increasingly require certified sustainable lumber on public jobs.</p>`,c:()=>[choice('Certify every branch','good',()=>{spend(scaleC(150e3));addAccts(['muni','comm'],3);repPct(0.02)},'+Public-sector accounts'),choice('Not yet','sec',()=>{},'')]},
- {id:'execpoach',t:'🎯 A rival courts your director',h:()=>{const d=S.corp&&Object.values(S.corp.dirs).find(Boolean);return `<p>A national competitor offered <b>${esc(d?d.name:'one of your directors')}</b> a VP title and equity.</p>`},c:()=>{const C=S.corp,k=C?Object.keys(C.dirs).find(k=>C.dirs[k]):null,d=k?C.dirs[k]:null;return [choice('Counter with equity','good',()=>{spend(scaleC(250e3));if(d){d.mor=100;d.sal=Math.round((d.sal||15e3)*1.15)}},'Expensive · they stay and stay loyal'),choice('Wish them well','bad',()=>{if(k){C.dirs[k]=null;news('🎯 '+(d?d.name:'A director')+' left for a competitor. The seat is open.')}},'You\'ll need a new director')]}},
+ {id:'execpoach',t:'🎯 A rival courts your director',h:()=>{const d=S.corp&&Object.values(S.corp.dirs).find(Boolean);return `<p>A national competitor offered <b>${esc(d?https://url.us.m.mimecastprotect.com/s/GS_CCQWOkMi9OLgwi9C9ktG9ncD?domain=d.name'one of your directors')}</b> a VP title and equity.</p>`},c:()=>{const C=S.corp,k=C?Object.keys(C.dirs).find(k=>C.dirs[k]):null,d=k?C.dirs[k]:null;return [choice('Counter with equity','good',()=>{spend(scaleC(250e3));if(d){d.mor=100;d.sal=Math.round((d.sal||15e3)*1.15)}},'Expensive   they stay and stay loyal'),choice('Wish them well','bad',()=>{if(k){C.dirs[k]=null;news('🎯 '+(d?https://url.us.m.mimecastprotect.com/s/GS_CCQWOkMi9OLgwi9C9ktG9ncD?domain=d.name'A director')+' left for a competitor. The seat is open.')}},'You\'ll need a new director')]}},
  {id:'board',t:'🏛️ Industry association board',h:()=>`<p>The national fence association asks you to join its board of directors.</p>`,c:()=>[choice('Accept','good',()=>{repPct(0.04);S.rp+=25},'Travel and meetings · industry clout'),choice('Decline','sec',()=>{},'')]},
  {id:'close',t:'📉 The worst branch',h:()=>{const B=brs().slice().sort((a,b)=>(a.r13||[]).reduce((x,y)=>x+y,0)-(b.r13||[]).reduce((x,y)=>x+y,0))[0];return B?`<p>Finance flags <b>${esc(MT(B.m).n)}</b> as your weakest location over the last quarter. They want a decision.</p>`:'<p>Finance wants a review of the weakest branch.</p>'},c:()=>{const B=brs().slice().sort((a,b)=>(a.r13||[]).reduce((x,y)=>x+y,0)-(b.r13||[]).reduce((x,y)=>x+y,0))[0];return [choice('Turnaround plan','good',()=>{if(B){spend(scaleC(60e3));B.share*=1.15;if(B.mgr)B.mgr.mor=Math.min(100,B.mgr.mor+10)}},'$60K · new marketing and coaching'),choice('Swap the manager','sec',()=>{if(B&&B.mgr){B.mgr=null;news('🧭 '+MT(B.m).n+' needs a new manager.')}},'Fresh eyes'),choice('Give it time','bad',()=>{},'')]}},
  {id:'wrongful',t:'⚖️ Wrongful termination suit',h:()=>`<p>A former yard lead at one of your branches is suing over how they were let go.</p>`,c:()=>[choice('Settle','sec',()=>{spend(scaleC(70e3))},''),choice('Fight it','bad',()=>{if(Math.random()<0.5){spend(scaleC(30e3));news('⚖️ The wrongful-termination suit was dismissed.')}else{spend(scaleC(220e3));news('⚖️ The jury sided with the former employee: $220K.')}},'Coin flip'),choice('Settle + retrain every manager','good',()=>{spend(scaleC(95e3));brMor(2);integ(3)},'Fewer suits later')]},
@@ -4429,7 +4429,7 @@ function saveRestoreText(txt){let o=null;try{o=JSON.parse(String(txt).trim())}ca
  modal('♻️ Restore this save?',`<p><b>${esc(o.founder&&o.founder.studio||'Your company')}</b>, ${esc(fyName(fyOf(o.week)))}, cash ${$m(o.money||0)}.</p><p class="bad small">This replaces the game you're playing now.</p>`,[{t:'Cancel',c:'sec'},{t:'Restore',c:'good',f:()=>{try{if(timer)clearInterval(timer)}catch(e){}S=null;try{localStorage.setItem(SAVE,JSON.stringify(o))}catch(e){}location.reload()}}])}
 function saveImportFile(){const inp=document.createElement('input');inp.type='file';inp.accept='.json,application/json,text/plain';inp.onchange=()=>{const f=inp.files&&inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>saveRestoreText(r.result);r.readAsText(f)};inp.click()}
 function saveImportPaste(){modal('📋 Paste a save code',`<textarea id="svPaste" rows="5" style="width:100%;border-radius:12px;padding:8px;font-size:12px" placeholder="Paste the save code here"></textarea>`,[{t:'Cancel',c:'sec'},{t:'Restore',c:'good',f:()=>{const t=(document.getElementById('svPaste')||{}).value||'';setTimeout(()=>saveRestoreText(t),50)}}])}
-const _shAP=settingsHtml;settingsHtml=function(){return _shAP()+`<div class="card"><h3>💾 Backup &amp; restore</h3><p class="small mut">Your game saves automatically on this device. Back it up before you switch phones, reinstall, or clear app data.</p>
+const _shAP=settingsHtml;settingsHtml=function(){return _shAP()+`<div class="card"><h3>💾 Backup & restore</h3><p class="small mut">Your game saves automatically on this device. Back it up before you switch phones, reinstall, or clear app data.</p>
  <div class="row" style="flex-wrap:wrap;gap:6px;margin-top:6px"><button class="btn sm" onclick="saveExport()">Back up to a file</button><button class="btn sec sm" onclick="saveCopy()">Copy save code</button><button class="btn sec sm" onclick="saveImportFile()">Restore from a file</button><button class="btn sec sm" onclick="saveImportPaste()">Paste a save code</button></div>
  ${isApp()?`<div class="between small" style="margin-top:10px"><span>Vibrate on taps</span><button class="btn sm ${S.hapOff?'sec':''}" onclick="S.hapOff=!S.hapOff;save();render()">${S.hapOff?'Off':'On'}</button></div>`:''}</div>`};
 
@@ -4495,7 +4495,7 @@ function yardExtras3(room,N,X0,X1,laneZ){const T=THREE;const YD=X1-X0;
  if(hasR('y_rack')){const rz=0.25;const n=Math.floor((YD-1)/1.4);for(let i=0;i<=n;i++)bx(room,0.08,2.6,0.08,'#f07d1a',X0+0.4+i*1.4,1.3,rz,{metalness:0.4});for(let lv=0;lv<3;lv++){bx(room,n*1.4,0.08,0.06,'#2f6fd0',X0+0.4+n*0.7,0.8+lv*0.8,rz+0.25,{metalness:0.4});for(let i=0;i<n;i++)if((i+lv)%3)bx(room,1.1,0.5,0.45,['#c98a4b','#9aa0a8','#3a6ea5'][(i+lv)%3],X0+1.1+i*1.4,1.1+lv*0.8,rz+0.05)}}
  if(hasR('y_auto')){const gx0=X0+0.6,gx1=X1-0.6,gz=laneZ*0.45;[gx0,gx1].forEach(x=>{bx(room,0.2,3.4,0.2,'#ffd23f',x,1.7,gz-1.2,{metalness:0.4});bx(room,0.2,3.4,0.2,'#ffd23f',x,1.7,gz+1.2,{metalness:0.4})});[-1.2,1.2].forEach(d=>bx(room,gx1-gx0,0.22,0.22,'#ffd23f',(gx0+gx1)/2,3.45,gz+d,{metalness:0.4}));const tr=bx(room,0.5,0.3,2.6,'#2b2f36',X0+YD*0.4,3.3,gz);cyl(room,0.015,0.015,1.6,'#222',X0+YD*0.4,2.4,gz,null,6);bx(room,0.4,0.15,0.4,'#2b2f36',X0+YD*0.4,1.55,gz)}
  if(hasR('y_solar')){const sx0=X1-3.4,sz=laneZ-0.2;[0,1].forEach(i=>[0,1].forEach(j=>bx(room,0.1,2.8-j*0.5,0.1,'#8d939a',sx0+0.3+i*2.8,1.4-j*0.25,sz+0.2-j*1.6,{metalness:0.5})));const pnl=new T.Mesh(new T.BoxGeometry(3.2,0.06,2.0),new T.MeshStandardMaterial({color:'#1b2a55',metalness:0.6,roughness:0.25}));pnl.position.set(sx0+1.7,2.65,sz-0.6);pnl.rotation.x=0.2;room.add(pnl);for(let k=1;k<5;k++)bx(room,0.02,0.07,2.0,'#c9cdd3',sx0+0.1+k*0.64,2.69,sz-0.6).rotation.x=0.2}
- if(hasR('y_xdock')||renoR('dock')){const dx=Math.max(X0+3.2,X1-6.2),dz=N-1.05;bx(room,2.6,0.6,1.0,'#9aa0a8',dx-2.2,0.3,dz,{roughness:0.9});[-0.8,0.8].forEach(o=>bx(room,0.12,0.3,0.12,'#1a1a1a',dx-0.95,0.45,dz+o));bx(room,0.6,0.02,1.4,'#ffd23f',dx-0.65,0.61,dz);if(X1-6.2>X0+3)yardTruck(room,dx,dz)}
+ O3.cvW=null;if(hasR('y_xdock')||renoR('dock')){const px0=X0+(hasR('y_fork')&&YD>=5?1.3:0.15),dz=N-0.58,pe=px0+1.3;bx(room,1.3,0.6,1.1,'#9aa0a8',px0+0.65,0.3,dz,{roughness:0.9});[-0.45,0.45].forEach(o=>bx(room,0.12,0.3,0.12,'#1a1a1a',pe+0.04,0.45,dz+o));bx(room,0.4,0.02,1.0,'#ffd23f',pe-0.15,0.61,dz);let w=pe;if(X1-(pe+3.65)>=3.8){yardTruck(room,pe+1.9,dz);w=pe+3.7}O3.cvW=w+0.3}
  if(hasR('b_install')){const vx=X0+YD*0.55,vz=laneZ-0.35;const v=new T.Group();v.position.set(vx,0,vz);room.add(v);bx(v,1.9,0.95,0.85,'#f2f0ea',0,0.75,0);bx(v,0.6,0.6,0.82,'#f2f0ea',1.1,0.6,0);bx(v,0.04,0.35,0.6,'#9fd8ff',1.41,0.85,0);[[-0.6,0.43],[0.6,0.43],[-0.6,-0.43],[0.6,-0.43],[1.15,0.43],[1.15,-0.43]].forEach(([x,z])=>{const w=cyl(v,0.17,0.17,0.12,'#1c1c20',x,0.17,z,{},12);w.rotation.x=Math.PI/2});const lc=S.founder&&S.founder.logo?LOGOC[S.founder.logo.c%LOGOC.length]:'#2f7a5f';bx(v,1.6,0.12,0.01,lc,0,0.7,0.43);
   const tr=new T.Group();tr.position.set(vx-2.4,0,vz);room.add(tr);bx(tr,1.8,0.08,0.8,'#55585f',0,0.4,0);for(let k=0;k<6;k++){const p=cyl(tr,0.04,0.04,1.7,'#8a6a40',0,0.5+k*0.05,-0.3+k*0.12,null,6);p.rotation.z=Math.PI/2}const aug=cyl(tr,0.06,0.06,1.0,'#f07d1a',0.6,0.95,0.25,{metalness:0.4},8);[-0.6,0.6].forEach(x=>{const w=cyl(tr,0.17,0.17,0.1,'#1c1c20',x,0.17,0.42,{},12);w.rotation.x=Math.PI/2})}
  if(hasR('b_mfg')||hasR('s_fab')){const fx=X1-1.4,fz=0.6+(hasR('y_rack')?0.9:0);[0,1].forEach(i=>[0,1].forEach(j=>cyl(room,0.05,0.05,2.6,'#8d939a',fx-1+i*2,1.3,fz+j*2,{metalness:0.5},6)));bx(room,2.3,0.06,2.3,'#7a8088',fx,2.62,fz+1,{metalness:0.5});bx(room,1.4,0.85,0.8,'#5c5f62',fx,0.43,fz+1,{metalness:0.6});const gt=new T.Group();gt.position.set(fx,0.88,fz+1);room.add(gt);bx(gt,1.0,0.04,0.6,'#22252b',0,0.02,0);for(let k=0;k<5;k++)bx(gt,0.03,0.03,0.56,'#22252b',-0.4+k*0.2,0.05,0);const spark=new T.PointLight(0x9fd8ff,1.2,2.2,2);spark.position.set(fx+0.3,1.1,fz+1);room.add(spark);O3.spark=spark;label3(room,'Fab Shop',fx,2.85,fz+2.05,0,1.0)}
@@ -4672,10 +4672,16 @@ function cvForklift(room){const T=THREE;const g=new T.Group();room.add(g);
 function cvCargo(parent,col,kind){const T=THREE;const g=new T.Group();parent.add(g);bx(g,0.62,0.08,0.62,'#a7804f',0,0.04,0);
  if(kind==='pipe'||kind==='roll'){for(let r=0;r<2;r++)for(let k=0;k<3;k++){const c=cyl(g,0.09,0.09,kind==='roll'?0.55:0.95,col,-0.18+k*0.18,0.17+r*0.17,0,{metalness:0.4},10);c.rotation.z=Math.PI/2}}
  else bx(g,kind==='bags'?0.55:0.6,kind==='lum'?0.36:0.3,kind==='lum'?0.95:0.55,col,0,kind==='lum'?0.26:0.23,0);return g}
-function pickupsInit(room,N,X0,X1,laneZ){const YD=X1-X0;if(YD<5||!S.lines||!S.lines.length){O3.cv=null;yardForklift(room,X0+1.1,laneZ+1.05);return}
- const fk=cvForklift(room);const home={x:X0+1.7,z:laneZ+0.75};fk.g.position.set(home.x,0,home.z);fk.g.rotation.y=-Math.PI/2;
- const loadX=clamp(X0+YD*0.42,X0+2.2,Math.max(X0+2.2,X1-5.2));
- O3.cv={room,N,X0,X1,laneZ,fk,home,loadX,cust:null,wait:2+Math.random()*3,last:null,fq:[],cq:[]}}
+// Yard lane layout (front strip, laneZ..N): forklift aisle near the bays, customer lane by the fence.
+// Our own truck parks in the aisle, so it heads out on deliveries and customers only pull in while it's gone.
+const CV_DIM={pickup:{f:1.62,r:1.08},van:{f:1.6,r:1.18},stake:{f:1.62,r:1.98},trailer:{f:1.62,r:3.58}};
+function pickupsInit(room,N,X0,X1,laneZ){const YD=X1-X0;const W=Math.max(X0+0.3,hasR('y_fork')?X0+1.0:0,O3.cvW||0),E=X1-0.3;O3.cvW=null;
+ const kinds=['pickup','pickup','trailer','stake','van'].filter(k=>E-W>=CV_DIM[k].f+CV_DIM[k].r+0.1);
+ if(YD<5||!S.lines||!S.lines.length||!kinds.length){O3.cv=null;yardForklift(room,X0+1.1,laneZ+1.05);return}
+ const AZ=laneZ+0.45;const fk=cvForklift(room);const home={x:X0+1.7,z:AZ};fk.g.position.set(home.x,0,home.z);fk.g.rotation.y=fkAng(-1,0);
+ let tk=null;if(O3.ytk){tk={g:O3.ytk,h:0,hx:O3.ytk.position.x,hz:O3.ytk.position.z,st:'home',t:3+Math.random()*4,q:[]}}O3.ytk=null;
+ O3.cv={room,N,X0,X1,laneZ,AZ,W,E,kinds,fk,home,tk,cust:null,wait:1+Math.random()*2,last:null,fq:[],cq:[]}}
+
 // queue helpers: steps are {go:[x,z],rev},{lift:h},{pick:1},{drop:1},{wait:s},{face:ang}
 function cvStep(obj,q,dt,speed,fwdAng){if(!q.length)return true;const s=q[0],g=obj.g;
  if(s.wait!=null){s.wait-=dt;if(s.wait<=0)q.shift();return false}
@@ -4687,21 +4693,30 @@ function cvStep(obj,q,dt,speed,fwdAng){if(!q.length)return true;const s=q[0],g=o
  if(s.face!=null){const da=cvAng(g.rotation.y,s.face);g.rotation.y+=Math.sign(da)*Math.min(Math.abs(da),dt*3.2);if(Math.abs(da)<0.01)q.shift();return false}
  q.shift();return false}
 const fkAng=(dx,dz)=>Math.atan2(-dx,-dz),vAng=(dx,dz)=>Math.atan2(-dz,dx);
-function cvNewCustomer(){const C=O3.cv;const kind=pick(['pickup','pickup','trailer','stake','van']);const v=cvVehicle(C.room,kind);const lane=C.N-0.55,gx=C.X1-1.6;
- v.g.position.set(gx,0,C.N+4.5);v.g.rotation.y=vAng(0,-1);const stopX=C.loadX-v.load.x;
- const trips=kind==='van'?1:kind==='pickup'?2:3;C.cust={v,trips,lane,gx,stopX,state:'in'};
+function cvNewCustomer(){const C=O3.cv;const kind=pick(C.kinds),D=CV_DIM[kind];const v=cvVehicle(C.room,kind);const lane=C.N-0.55,gx=C.X1-1.6;
+ v.g.position.set(gx,0,C.N+4.5);v.g.rotation.y=vAng(0,-1);
+ const want=C.X0+(C.X1-C.X0)*0.42+v.load.x;const stopX=clamp(want,C.W+D.f,Math.max(C.W+D.f,C.E-D.r));const loadX=stopX-v.load.x;
+ const trips=kind==='van'?1:kind==='pickup'?2:3;C.cust={v,kind,trips,lane,gx,stopX,loadX,state:'in'};
  C.cq=[{go:[gx,lane+0.05]},{go:[stopX,lane]},{face:vAng(-1,0)},{fn:()=>{C.cust.state='load';cvPlanTrips()}}]}
-function cvPlanTrips(){const C=O3.cv,cu=C.cust,fk=C.fk;const bays=Math.max(2,Math.floor((C.X1-C.X0-0.4)/2.6));
- for(let k=0;k<cu.trips;k++){const bxp=C.X0+0.3+(Math.floor(Math.random()*bays)+0.5)*2.6;const line=pick(S.lines);const col=YCOL[line]||'#c98a4b',knd=YKIND[line]||'box';const pz=C.laneZ+0.65;
-  C.fq.push({go:[bxp,pz+0.3]},{face:fkAng(0,-1)},{lift:0.05},{go:[bxp,pz-0.05]},{lift:0.25},{fn:()=>{fk.ld.clear&&fk.ld.clear();while(fk.ld.children.length)fk.ld.remove(fk.ld.children[0]);cvCargo(fk.ld,col,knd);fk.ld.visible=true;fk.col=col;fk.knd=knd}},{wait:0.3},
-   {go:[bxp,pz+0.35],rev:1},{go:[C.loadX,C.laneZ+0.45]},{face:fkAng(0,1)},{lift:cu.v.load.y+0.45},{go:[C.loadX,C.laneZ+0.6]},
-   {fn:()=>{fk.ld.visible=false;const v=cu.v,L=v.load;const c=cvCargo(v.g,fk.col,fk.knd);const n=v.n++;const lx=L.x+((n%2)?0.32:-0.32)*(L.w>1.2?1:0),ly=L.y+(L.w>1.2?Math.floor(n/2):n)*0.34;c.position.set(lx,ly,0);c.rotation.y=Math.PI/2;if(L.inside)c.visible=false}},
-   {lift:cu.v.load.y+0.3},{go:[C.loadX,C.laneZ+0.3],rev:1},{lift:0.05})}
- C.fq.push({fn:()=>{cvLeave()}},{go:[C.home.x,C.home.z]},{face:fkAng(1,0)})}
+function cvPlanTrips(){const C=O3.cv,cu=C.cust,fk=C.fk,AZ=C.AZ,lx=cu.loadX;const bays=Math.max(2,Math.floor((C.X1-C.X0-0.4)/2.6));
+ for(let k=0;k<cu.trips;k++){const bxp=C.X0+0.3+(Math.floor(Math.random()*bays)+0.5)*2.6;const line=pick(S.lines);const col=YCOL[line]||'#c98a4b',knd=YKIND[line]||'box';
+  C.fq.push({go:[bxp,AZ]},{face:fkAng(0,-1)},{lift:0.05},{go:[bxp,C.laneZ+0.2]},{lift:0.25},{fn:()=>{while(fk.ld.children.length)fk.ld.remove(fk.ld.children[0]);cvCargo(fk.ld,col,knd);fk.ld.visible=true;fk.col=col;fk.knd=knd}},{wait:0.3},
+   {go:[bxp,AZ],rev:1},{go:[lx,C.laneZ+0.3]},{lift:cu.v.load.y+0.45},{face:fkAng(0,1)},{go:[lx,C.laneZ+0.6]},
+   {fn:()=>{fk.ld.visible=false;const v=cu.v,L=v.load;const c=cvCargo(v.g,fk.col,fk.knd);const n=v.n++;const px=L.x+((n%2)?0.32:-0.32)*(L.w>1.2?1:0),py=L.y+(L.w>1.2?Math.floor(n/2):n)*0.34;c.position.set(px,py,0);c.rotation.y=Math.PI/2;if(L.inside)c.visible=false}},
+   {lift:cu.v.load.y+0.3},{go:[lx,C.laneZ+0.3],rev:1},{lift:0.05})}
+ C.fq.push({fn:()=>{cvLeave()}},{go:[C.home.x,C.home.z]},{face:fkAng(-1,0)})}
 function cvLeave(){const C=O3.cv,cu=C.cust;if(!cu)return;cu.state='out';const lane=cu.lane;
- C.cq=[{wait:0.6},{go:[cu.gx-0.6,lane],rev:1},{go:[cu.gx,C.N+5]},{fn:()=>{C.room.remove(cu.v.g);C.cust=null;C.wait=4+Math.random()*6}}]}
+ C.cq=[{wait:0.6},{go:[Math.min(cu.gx-0.6,C.E-1.7),lane],rev:1},{go:[cu.gx,C.N+5]},{fn:()=>{C.room.remove(cu.v.g);C.cust=null;C.wait=3+Math.random()*5}}]}
+// our truck: home → out on a delivery → away → back home
+function cvTruck(C,dt){const tk=C.tk;if(!tk)return;const g=tk.g,gx=C.X1-1.6;
+ if(tk.q.length){cvStep(tk,tk.q,dt,2.2,vAng);return}
+ tk.t-=dt;if(tk.t>0)return;
+ if(tk.st==='home'&&!C.cust&&!C.fq.length){tk.st='out';tk.q=[{go:[tk.hx-0.45,tk.hz+0.15],rev:1},{go:[gx,C.N-0.3]},{go:[gx,C.N+5]},{fn:()=>{g.visible=false;tk.st='away';tk.t=22+Math.random()*25;C.wait=Math.min(C.wait,1.5)}}]}
+ else if(tk.st==='away'&&!C.cust){tk.st='in';g.visible=true;g.position.set(gx,0,C.N+5);g.rotation.y=vAng(0,-1);
+  tk.q=[{go:[gx,C.N-0.45]},{go:[tk.hx-0.45,tk.hz+0.15],rev:1},{go:[tk.hx,tk.hz]},{face:vAng(1,0)},{fn:()=>{tk.st='home';tk.t=8+Math.random()*10}}]}}
 function pickupsTick(t){const C=O3.cv;if(!C)return;const dt=C.last==null?0:Math.min(0.1,t-C.last);C.last=t;if(!dt)return;
- if(!C.cust){C.wait-=dt;if(C.wait<=0)cvNewCustomer();}
+ cvTruck(C,dt);const open=!C.tk||C.tk.st==='away';
+ if(!C.cust&&open){C.wait-=dt;if(C.wait<=0)cvNewCustomer();}
  if(C.cust&&C.cq.length)cvStep(C.cust.v,C.cq,dt,2.2,vAng);
  if(C.fq.length)cvStep(C.fk,C.fq,dt,1.4,fkAng)}
 // hook into the yard build and frame loop
@@ -4807,6 +4822,36 @@ const _wkTS=weekly;weekly=function(){_wkTS();try{shopTeaseWeek()}catch(e){consol
 // after buying CEO mode mid-game: offer the skip-ahead start
 const _sgCE=shopGrant;shopGrant=function(p){_sgCE(p);if(p.k==='ceo'&&S&&!S.ceo)modal('🏛️ CEO mode unlocked',`<p>You can keep growing this company and move to corporate when you're ready (Business → Company), or start a <b>new company that skips straight to corporate</b> with a seasoned crew and three branches.</p><p class="small warn">Starting a new company replaces this save. Back it up first in Settings if you want to keep it.</p>`,[{t:'Keep this company',c:'good',f:()=>{}},{t:'Start a new company as CEO',c:'sec',f:()=>{try{localStorage.removeItem(SAVE)}catch(e){}S=null;if(timer)clearInterval(timer);document.getElementById('hud').innerHTML='';document.getElementById('dock').innerHTML='';officeShow(false);render();news&&0;setTimeout(()=>modal('🏛️ New company','<p>Set up your founder and company as usual. On the last step, tap <b>🏛️ Start as CEO</b> to skip straight to corporate.</p>'),300)}}])};
 
+/* ===== Real-world economics: distributor GP% by category, market wages, payroll burden ===== */
+// Line margins benchmarked to a real fence & deck distributor's YTD GP% by business area.
+const ECON_M={chain:0.19,pipe:0.19,hw:0.39,gate:0.24,orn:0.185,wood:0.16,vinyl:0.21,ag:0.215,temp:0.235,sec:0.125,welded:0.21,slats:0.33,concrete:0.25,sport:0.21,bollard:0.21,compfence:0.24,
+ deck:0.17,comp:0.23,pvcdeck:0.24,rail:0.28,framing:0.21,lighting:0.36,pergola:0.27};
+const ECON_OLD={};LINES.forEach(l=>{ECON_OLD[l.k]=l.m;if(ECON_M[l.k]!=null)l.m=ECON_M[l.k]});
+// Monthly base pay by role in 2000 dollars (inflates 3%/yr). 2026 equivalents: yard hand ~$40K, yard lead ~$50K,
+// counter ~$48K, driver ~$58K, estimator ~$60K, buyer ~$62K, rep ~$75K w/ commission, asst mgr ~$80K, ops mgr ~$85K, branch mgr ~$115K.
+const ROLE_PAY={yardhand:1870,yard:2340,counter:2250,driver:2700,installer:2575,estimator:2800,buyer:2900,rep:3500,asstmgr:3750,opsmgr:4000,manager:5400};
+expectedSal=function(s){const base=ROLE_PAY[s.rk]||2300;const avg=CATS.reduce((a,c)=>a+s.sk[c.k],0)/5;
+ const f=clamp(0.82+(avg-60)/260+((s.iq||5)-5)*0.015+((s.mgr||s.opsMgr)&&s.lead?(s.lead-90)/700:0),0.8,1.4);
+ return Math.round(base*f*infl()*(hasT(s,'frugal')?0.9:1)/100)*100};
+{const _gcEC=genCand;genCand=function(t,rk){const c=_gcEC(t,rk);if(c)c.salary=expectedSal(c);return c}}
+// Corporate: branch-level GP and leadership pay to match
+LV.bm.sal=[5e3,7e3];LV.rm.sal=[7.5e3,10e3];LV.dir.sal=[10e3,14e3];
+// Payroll burden (taxes, workers' comp, health) and operating overhead (utilities, insurance, IT, card fees, supplies)
+const _wkEC=weekly;weekly=function(){const pay=S.staff.reduce((a,s)=>a+s.salary,0)*12/52;const rev0=(S.led[fyOf(S.week)]||{rev:0}).rev;
+ _wkEC();const fy=S.led[fyOf(S.week)]||{rev:0};const rev=Math.max(0,fy.rev-rev0);
+ const o=pay*0.2+rev*0.015+OFFICES[S.office].rent*0.3;spend(o);S.wk&&(S.wk.ovh=o)};
+// Yearly cost-of-living raise
+const _fyEC=fyClose;fyClose=function(y){_fyEC(y);let n=0;S.staff.forEach(s=>{if(!s.founder&&s.salary){s.salary=Math.round(s.salary*1.025/100)*100;n++}});if(n)news('💵 Annual 2.5% cost-of-living raise for '+n+' employee'+(n>1?'s':'')+'.')};
+// One-time update for older saves: shift margins to the new benchmarks and bring pay in line with the market
+function econMigrate(){if(!S||S.econV)return;S.econV=1;if(!S.week||S.week<2)return;
+ if(S.mg)LINES.forEach(l=>{if(S.mg[l.k]!=null&&ECON_OLD[l.k]!=null)S.mg[l.k]=clamp(Math.round((S.mg[l.k]-(ECON_OLD[l.k]-l.m))*100)/100,0.05,0.6)});
+ let n=0;S.staff.forEach(s=>{if(s.founder)return;const ex=expectedSal(s);if(s.salary>ex*1.1){s.salary=Math.round(ex*1.1/100)*100;n++}});
+ if(S.corp){const cut=p=>{if(p&&p.sal)p.sal=Math.round(p.sal*0.65/100)*100};S.corp.br.forEach(B=>cut(B.mgr));Object.values(S.corp.rms||{}).forEach(cut);Object.values(S.corp.dirs||{}).forEach(cut)}
+ if(n)news('📊 Payroll re-benchmarked to local market rates.')}
+{const _ldEC=load;load=function(){const r=_ldEC.apply(this,arguments);try{if(r)econMigrate()}catch(e){console.error(e)}return r}}
+{const _snEC=typeof startNew==='function'?startNew:null;if(_snEC)startNew=function(){const r=_snEC.apply(this,arguments);if(S)S.econV=1;return r}}
+AVGM.sal=6e3;STRM.sal=7.5e3;
+
 if(typeof document!=='undefined'&&document.getElementById('main'))addEventListener('DOMContentLoaded',boot);
 </script>
 
@@ -4852,3 +4897,4 @@ function tutTip(i){if(!S||S.tutOff||S.jobs.length)return'';return `<div class="c
 </script>
 </body>
 </html>
+

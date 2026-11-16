@@ -772,10 +772,10 @@ function awardHtml(J){const A=acct(J.acct);const best=J.rv.slice().sort((a,b)=>b
 function afterBid(J){if(J.won&&J.size!=='small'&&S.staff.length>=3&&J.gp>40e3){const cost=Math.round(30*S.staff.length*(typeof infl==='function'?infl():1)/10)*10;modal('🍕 Celebrate?',`<p>That's a big win. Buy the crew lunch?</p>`,[choice('Lunch is on us ('+$m(cost)+')','good',()=>{spend(cost);S.staff.forEach(s=>moraleAdd(s,6));const st=S.staff;for(let i=0;i<st.length;i++)for(let j=i+1;j<st.length;j++)relAdd(st[i].id,st[j].id,4)}),choice('Back to work','sec',()=>{})])}}
 
 /* ================= ORDERS & RECEIVABLES ================= */
-function orderWeek(){let cap=deliverCap();let icap=installCap();const ic0=icap;const used0=cap;S.wk.blocked=0;S.wk.short=0;
+function orderWeek(){let cap=deliverCap();let icap=installCap();const ic0=icap;const used0=cap;S.wk.blocked=0;S.wk.tb=0;S.wk.short=0;
  S.orders.slice().sort((a,b)=>a.dueW-b.dueW).forEach(o=>{if(S.week<o.ready)return;
   if(!o.vendPaid&&S.week>=(o.vendW==null?o.ready:o.vendW)){pay(o.vendCost);o.vendPaid=true;o.held+=o.vend;o.heldCost+=o.vendCost;if(o.held>o.left+0.01){const ex=o.held-o.left,vu=o.vendCost/Math.max(0.01,o.vend);const I=S.inv[o.line];I.c=(I.u*I.c+ex*vu)/(I.u+ex);I.u+=ex;o.heldCost-=ex*vu;o.held=o.left}o.vend=0}
-  let can=o.left;if(DLV[o.dlv].truck){can=Math.min(can,cap);if(can<=0.01){S.wk.blocked+=o.left;return}if(o.dlv==='staged'&&!canStage()){S.wk.blocked+=o.left;return}}if(o.inst){can=Math.min(can,icap);if(can<=0.01){S.wk.blocked+=o.left;return}}
+  let can=o.left;if(DLV[o.dlv].truck){can=Math.min(can,cap);if(can<=0.01){S.wk.blocked+=o.left;S.wk.tb+=o.left;return}if(o.dlv==='staged'&&!canStage()){S.wk.blocked+=o.left;return}}if(o.inst){can=Math.min(can,icap);if(can<=0.01){S.wk.blocked+=o.left;return}}
   // pull from held stock, then live inventory
   let fromHeld=Math.min(can,o.held);let fromInv=0;if(can>fromHeld&&o.vendPaid){const I=S.inv[o.line];fromInv=Math.min(can-fromHeld,I.u);if(fromInv>0){o.heldCost+=fromInv*I.c;I.u-=fromInv;o.held+=fromInv;fromHeld+=fromInv}if(can-fromHeld>0.01)S.wk.short+=can-fromHeld}
   const moved=fromHeld;if(moved<=0)return;o.held-=moved;o.left-=moved;if(DLV[o.dlv].truck)cap-=moved;if(o.inst)icap-=moved;o.moved=(o.moved||0)+moved;
@@ -1998,7 +1998,7 @@ function draw3Di(ts){O3.raf=0;if(!S||!O3.active)return;const T=THREE,r=O3.render
  {const L=N-1.8,ph=(t*0.045)%4;let cx,cz,ang;if(ph<1){cx=0.9+ph*L;cz=N-0.45;ang=Math.PI/2}else if(ph<2){cx=0.9+L;cz=N-0.45-(ph-1)*(L-0.4);ang=Math.PI}else if(ph<3){cx=0.9+L-(ph-2)*L;cz=1.2;ang=-Math.PI/2}else{cx=0.9;cz=1.2+(ph-3)*(N-1.65);ang=0}O3.cat.position.set(cx,Math.abs(Math.sin(t*10))*0.02,cz);O3.cat.rotation.y=ang}
  // people
  const cheer=performance.now()-OFF.cheer<3500;
- S.staff.forEach((s,i)=>{const R=O3.rigs[s.id];if(!R)return;const away=!!s.vac;R.g.visible=!away;const work=s.task!=='idle'&&!s.train;
+ S.staff.forEach((s,i)=>{const R=O3.rigs[s.id];if(!R)return;const away=!!s.vac;R.g.visible=!away&&!(R.hide&&R.hide());const work=s.task!=='idle'&&!s.train;
   const period=busy()?75:40,ph=(t+i*17.3)%period;const onBreak=!away&&!s.train&&!cheer&&ph<10;
   R.scr.forEach(m=>{if(!away&&s.task!=='idle')m.color.setHSL((215+Math.sin(t*3+i)*12)/360,0.7,(42+night*14+Math.sin(t*7+i)*4)/100);else m.color.set('#1d2440')});
   if(R.pl)R.pl.intensity=night*1.4;
@@ -3768,7 +3768,7 @@ const _mgCEO=mgOffer;mgOffer=function(kind,ctx,title,html,apply){if(S&&S.ceo){tr
 const _ebCEO=ebWeek;ebWeek=function(){if(S&&S.ceo){if(monthOf(S.week)===10&&S.ebY!==yearOf(S.week)&&S.week>=40){S.ebY=yearOf(S.week);homeLog('Early-buy season','booked by the branch')}return}return _ebCEO()};
 function homeWeek(){const m=homeMgr(),q=homeQ();if(S.ebOpen){S.ebOpen=false}
  if(!onTask('buyer').length&&!has('y_erp'))purchase(q*0.8,0,false);
- if(m&&S.week%6===0&&S.staff.length-1<hireCap()&&S.money>80e3){const W=S.wk||{};let rk=null;if((W.blocked||0)>0)rk='driver';else if((W.fill||1)<0.9&&!onTask('buyer').length)rk='buyer';else if(S.rfqs.filter(r=>!inBid(r.id)).length>3&&S.staff.filter(s=>s.rk==='estimator').length<1+Math.ceil(S.accts.length/20))rk='estimator';else if((W.rev||0)>60e3&&onTask('counter').length<2)rk='counter';
+ if(m&&S.week%6===0&&S.staff.length-1<hireCap()&&S.money>80e3){const W=S.wk||{};let rk=null;if((W.tb||0)>0&&fleetNeed()==='driver')rk='driver';else if((W.fill||1)<0.9&&!onTask('buyer').length)rk='buyer';else if(S.rfqs.filter(r=>!inBid(r.id)).length>3&&S.staff.filter(s=>s.rk==='estimator').length<1+Math.ceil(S.accts.length/20))rk='estimator';else if((W.rev||0)>60e3&&onTask('counter').length<2)rk='counter';
   if(rk){S.hireRole=rk;recruit(0);if(S.cands&&S.cands.length){const c=S.cands.slice().sort((a,b)=>Object.values(b.sk).reduce((x,y)=>x+y,0)-Object.values(a.sk).reduce((x,y)=>x+y,0))[0];hire(S.cands.indexOf(c));homeLog('Hiring',(m.name.split(' ')[0])+' hired a '+(ROLES.find(r=>r.k===rk)||{n:rk}).n.toLowerCase())}}}
  const f=S.staff.find(x=>x.founder);if(f&&f.task!=='ceo')f.task='ceo'}
 
@@ -3972,7 +3972,7 @@ function hrWeek(){const C=S.corp;if(!C)return;const locs=1+C.br.length;
 function hrLog(t){const H=S.corp.hr;news(t);H.log.unshift({w:S.week,t});if(H.log.length>20)H.log.pop()}
 // hiring recommendations for the home branch
 function hrRecs(){const H=S.corp.hr,W=S.wk||{},R=[];const n=S.staff.length-1,cap=hireCap();const role=k=>ROLES.find(r=>r.k===k)||{n:k};
- if((W.blocked||0)>0)R.push({rk:'driver',why:'Deliveries were blocked by truck capacity.'});
+ if((W.tb||0)>0&&fleetNeed()==='driver')R.push({rk:'driver',why:'A truck sat parked with no driver.'});
  if((W.fill==null?1:W.fill)<0.92&&!onTask('buyer').length)R.push({rk:'buyer',why:'Counter fill rate is '+pct(W.fill)+' with no inventory manager.'});
  if(S.rfqs&&S.rfqs.filter(r=>!inBid(r.id)).length>3)R.push({rk:'estimator',why:S.rfqs.filter(r=>!inBid(r.id)).length+' requests for quote are waiting.'});
  if((W.rev||0)>50e3&&onTask('counter').length<2)R.push({rk:'counter',why:'The counter is busy with one person on it.'});
@@ -4078,7 +4078,7 @@ function scoutState(){S.pitch=S.pitch||{on:true,snooze:{},cur:null};return S.pit
 const RKN=k=>(ROLES.find(r=>r.k===k)||{n:k}).n;const RKA=k=>{const n=RKN(k);return (/^[AEIOU]/i.test(n)?'an ':'a ')+n};
 const ROLE_SK={rep:['sales','service'],estimator:['product','sales'],counter:['service','product'],yard:['ops','logistics'],driver:['logistics','ops'],buyer:['ops','product'],manager:['sales','ops'],opsmgr:['ops','logistics'],installer:['product','ops'],asstmgr:['service','ops']};
 function scoutNeeds(){const W=S.wk||{},R=[];const waiting=(S.rfqs||[]).filter(r=>!inBid(r.id)).length;
- if((W.blocked||0)>0)R.push({rk:'driver',why:'Trucks are maxed out. Deliveries got pushed last week.'});
+ if((W.tb||0)>0&&fleetNeed()==='driver')R.push({rk:'driver',why:'A truck sat parked with no driver while deliveries got pushed.'});
  if((W.fill==null?1:W.fill)<0.92&&!onTask('buyer').length)R.push({rk:'buyer',why:`We only filled ${pct(W.fill)} of counter demand. Nobody owns the reorders.`});
  if(waiting>3)R.push({rk:'estimator',why:`${waiting} requests for quote are sitting with nobody to bid them.`});
  if((W.rev||0)>45e3&&onTask('counter').length<2)R.push({rk:'counter',why:'The counter is slammed with one person on it.'});
@@ -4532,10 +4532,9 @@ function placeStaff3(room,N,H){const T=THREE;O3.desks=[];O3.spark=null;const X0=
  {const Lc=Math.min(N*0.42,5.5),cx=N*0.56,cz=N-1.55;const n=S.office>=2?3:S.office>=1?2:1;take(s=>s.rk==='counter').forEach((q,k)=>{if(k<n+1)add(q,{post:'stand',x:cx-Lc/2+Lc*(Math.min(k,n-1)+0.5)/n+(k>=n?0.6:0),z:cz-0.6,y:0,ry:0,work:'counter'});else used.delete(q.s.id)})}
  // yard crew outside
  const rows=Math.max(2,Math.floor((laneZ-0.3)/1.1)),rowEnd=Math.min(laneZ-0.2,0.4+rows*1.1+0.3);const YD=X1-X0;
- take(s=>s.rk==='yard'||s.rk==='yardhand').forEach((q,k)=>{const xa=X0+0.8+((k*1.9)%Math.max(1,YD-2.5)),xb=X0+1.2+((k*2.7+1.3)%Math.max(1,YD-2.5));add(q,{post:'walk',x:xa,z:rowEnd,x2:xb,z2:laneZ+0.55,y:0,carry:q.s.rk==='yardhand'})});
- take(s=>s.rk==='driver').forEach((q,k)=>add(q,{post:'stand',x:X1-3.7-k*0.55,z:N-0.35,y:0,ry:Math.PI/2,work:'idle'}));
- take(s=>s.rk==='fleet').forEach((q,k)=>add(q,{post:'stand',x:X1-1.2,z:laneZ+0.1-k*0.6,y:0,ry:Math.PI,work:'clip'}));
- take(s=>s.rk==='installer').forEach((q,k)=>add(q,{post:'stand',x:X0+YD*0.55-1.2+k*0.6,z:laneZ+0.45,y:0,ry:Math.PI,work:'idle'}));
+ take(s=>s.rk==='yard'||s.rk==='yardhand').forEach((q,k)=>{const xa=X0+0.8+((k*1.9)%Math.max(1,YD-2.5)),xb=X0+1.2+((k*2.7+1.3)%Math.max(1,YD-2.5));add(q,{post:'walk',x:xa,z:rowEnd,x2:xb,z2:laneZ-0.1,y:0,carry:q.s.rk==='yardhand'})});
+ {const hx=X1-2.0,hz=laneZ+0.62;take(s=>s.rk==='driver').forEach((q,k)=>add(q,k===0?{post:'walk',x:hx-1.4,z:hz+0.85,x2:hx+1.3,z2:hz+0.85,y:0,drv:k}:{post:'stand',x:hx+1.25,z:hz+0.75,y:0,ry:Math.PI,work:'clip',drv:k}))}
+  take(s=>s.rk==='installer').forEach((q,k)=>add(q,{post:'stand',x:X0+YD*0.55-1.22,z:laneZ-0.35,y:0,ry:Math.PI/2,work:'clip',inst:k}));
  // everyone else at a desk: bullpen first, then upstairs
  const deskers=take(()=>true);const est=q=>q.s.rk==='estimator';const pw=q=>(q.s.lvl||0)*10+Object.values(q.s.sk||{}).reduce((a,b)=>a+b,0);
  const zTop=BD+0.95,zBot=N-2.95;const bz=[];for(let z=zTop;z<=zBot+0.01;z+=2.1)bz.push(z);
@@ -4546,12 +4545,12 @@ function placeStaff3(room,N,H){const T=THREE;O3.desks=[];O3.spark=null;const X0=
  rest.forEach(q=>{const st=slots.shift()||upSlots.shift()||{x:1.15+(k2++%cols)*2.2,z:zBot+0.4,y:0};add(q,Object.assign({post:'desk'},st))});
  // build rigs
  const coffeeUp=loft?new T.Vector3(N-1.6,H+0.18,Dm-0.6):null;if(loft){bx(room,0.36,0.6,0.36,'#e8ecf5',N-1.6,H+0.48,Dm-0.4)}
- seats.forEach(({p,post,x,z,y,ry,x2,z2,work,carry})=>{const s=p.s,i=p.i;let parts={scr:[],pl:null,mug:{visible:true}};if(post==='desk')parts=desk3(room,x,y,z,i,y<0.1);
+ seats.forEach(({p,post,x,z,y,ry,x2,z2,work,carry,drv,inst})=>{const s=p.s,i=p.i;let parts={scr:[],pl:null,mug:{visible:true}};if(post==='desk')parts=desk3(room,x,y,z,i,y<0.1);
   const rig=buildRig(s);room.add(rig.g);const R=Object.assign(rig,{seat:new T.Vector3(x,y,z),scr:parts.scr,pl:parts.pl,mug:parts.mug,i,post,face:ry||0,work});
   if(post==='walk')R.seat2=new T.Vector3(x2,0,z2);if(carry){const b=bx(rig.g,0.5,0.12,0.4,'#c98a4b',0,1.0,0.35);b.visible=false;R.carry=b}
   R.coffee=y>1?coffeeUp:(YARD_RK.includes(s.rk)||!DESK_RK.includes(s.rk))?new T.Vector3(breakSpot.x,0,breakSpot.z):null;
   if(post==='stand'&&work==='clip')bx(rig.g,0.2,0.28,0.02,'#c98a4b',0.15,1.05,0.25);
-  O3.rigs[s.id]=R;if(post==='desk')O3.desks.push({g:null,scr:parts.scr})})}
+  if(drv!=null)R.hide=()=>drv>1||!cvTruckHome();if(inst!=null)R.hide=()=>inst>0||!hasR('b_install');O3.rigs[s.id]=R;if(post==='desk')O3.desks.push({g:null,scr:parts.scr})})}
 // ---------- per-frame poses for people who aren't at a desk ----------
 function poseTick(R,s,i,t,work,cheer){const L=R.legs,A=R.arms;R.mug.visible=false;const stand=()=>{R.hips.position.y=0.86+(cheer?Math.abs(Math.sin(t*8+i))*0.18:0);L.forEach(l=>{l.hip.rotation.x=0;l.knee.rotation.x=0})};
  if(R.post==='conf'){R.g.position.copy(R.seat);R.g.rotation.y=R.face;R.hips.position.y=0.52;L.forEach(l=>{l.hip.rotation.x=-Math.PI/2;l.knee.rotation.x=Math.PI/2});A.forEach((a,k)=>{a.sh.rotation.x=work?-0.9+Math.sin(t*2+i+k)*0.15:-0.4;a.el.rotation.x=-0.7});R.head.rotation.y=Math.sin(t*0.6+i)*0.4;R.torso.rotation.x=0.05;return}
@@ -4562,13 +4561,14 @@ function poseTick(R,s,i,t,work,cheer){const L=R.legs,A=R.arms;R.mug.visible=fals
   const e=k<0.5?2*k*k:1-Math.pow(-2*k+2,2)/2;const a=R.seat,b=R.seat2;R.g.position.set(a.x+(b.x-a.x)*e,0,a.z+(b.z-a.z)*e);const dx=b.x-a.x,dz=b.z-a.z;R.g.rotation.y=moving?Math.atan2(back?-dx:dx,back?-dz:dz):(ph<8&&ph>=6?Math.PI:0);
   const sw=moving&&work?Math.sin(t*8+i)*0.5:0;R.hips.position.y=0.86+(moving?Math.abs(Math.sin(t*8+i))*0.03:0);L[0].hip.rotation.x=sw;L[1].hip.rotation.x=-sw;L[0].knee.rotation.x=Math.max(0,-sw)*0.8;L[1].knee.rotation.x=Math.max(0,sw)*0.8;
   const carrying=R.carry&&work&&back;if(R.carry)R.carry.visible=!!carrying;if(carrying)A.forEach(a=>{a.sh.rotation.x=-1.2;a.el.rotation.x=-0.5});else{A[0].sh.rotation.x=-sw*0.6;A[1].sh.rotation.x=sw*0.6;A.forEach(a=>a.el.rotation.x=-0.2)}
-  if(!work){R.g.position.copy(R.seat);R.g.rotation.y=Math.PI;L.forEach(l=>{l.hip.rotation.x=0;l.knee.rotation.x=0})}R.torso.rotation.x=carrying?0.05:0;R.head.rotation.y=0}}
+  if(!work){R.g.position.copy(R.seat);R.g.rotation.y=Math.PI+((i*1.7)%2-1)*1.1;L.forEach(l=>{l.hip.rotation.x=0;l.knee.rotation.x=0})}R.torso.rotation.x=carrying?0.05:0;R.head.rotation.y=0}}
 // small animated extras
 function space3Tick(t){if(O3.drone){O3.drone.position.y=1.6+Math.sin(t*1.3)*0.15;O3.drone.rotation.y=t*0.4}if(O3.spark)O3.spark.intensity=(Math.sin(t*23)>0.6)?1.6:0.15}
 
 /* ===== P29: the fleet comes to you: truck purchase pitches and major maintenance approvals ===== */
 function fleetVoice(){const f=typeof fleetMgr==='function'?fleetMgr():null;if(f)return {s:f,who:f.name.split(' ')[0]+', your fleet manager'};
  const d=(typeof onTask==='function'?onTask('deliver'):[]).sort((a,b)=>eff(b,'logistics')-eff(a,'logistics'))[0];if(d)return {s:d,who:d.name.split(' ')[0]+', your lead driver'};return {s:null,who:'Your mechanic'}}
+function fleetNeed(){const dr=onTask('deliver').length,us=S.fleet.filter(t=>!(t.down>S.week)&&!TRUCKS[t.t].auto).length;return us>dr?'driver':'truck'}
 function fpState(){S.fp=S.fp||{cd:0,short:0,open:0};return S.fp}
 const truckAge=t=>Math.max(0,yearOf(S.week)-(t.y||yearOf(S.week)));
 function unlockedTrucks(){return Object.keys(TRUCKS).filter(k=>S.trucks.includes(k)&&!TRUCKS[k].auto)}
@@ -4584,11 +4584,11 @@ function fleetBuyPitch(){const F=fpState();if(F.open>S.week||S.week<F.cd||!S.fle
  const drivers=onTask('deliver').length,usable=S.fleet.filter(t=>!(t.down>S.week)&&!TRUCKS[t.t].auto).length;
  const bl=typeof backlog==='function'?backlog():0,cap=deliverCap();
  // short on trucks (not drivers): the backlog keeps outrunning what the trucks can haul, and every truck already has a driver
- if(bl>Math.max(12,cap*1.6)&&drivers>=usable)F.short++;else F.short=Math.max(0,F.short-1);if(F.short<2)return;
- const shortU=Math.max(6,Math.round(bl/2-cap));const P=truckPick(shortU);if(!P)return;const T=TRUCKS[P.best],C=P.cheap?TRUCKS[P.cheap]:null;const V=fleetVoice();
+ const tb=(S.wk&&S.wk.tb)||0;if((tb>0||bl>Math.max(12,cap*1.6))&&drivers>=usable)F.short++;else F.short=Math.max(0,F.short-1);if(F.short<2)return;
+ const shortU=Math.max(6,Math.round(Math.max(bl/2-cap,tb/2)));const P=truckPick(shortU);if(!P)return;const T=TRUCKS[P.best],C=P.cheap?TRUCKS[P.cheap]:null;const V=fleetVoice();
  if(S.ceo){if(S.money>T.cost*3&&fleetBuy(P.best,'branch fleet request'))homeLog&&homeLog('Fleet: bought a '+T.n,'Approved');F.cd=S.week+10;F.short=0;return}
  F.open=S.week+3;const age=S.fleet.length?Math.round(S.fleet.reduce((a,t)=>a+truckAge(t),0)/S.fleet.length):0;
- modal('🚚 We need another truck',`<p><b>${esc(V.who)}</b> has the delivery board up: <b>${bl} units</b> waiting against <b>${cap}/wk</b> of truck capacity, and every truck already has a driver. Customers are starting to wait.</p>
+ modal('🚚 We need another truck',`<p><b>${esc(V.who)}</b> has the delivery board up: <b>${bl} units</b> waiting against <b>${cap}/wk</b> of truck capacity, and every truck already has a driver${drivers>usable?` (${drivers-usable} driver${drivers-usable>1?'s are':' is'} waiting on a truck)`:''}. Customers are starting to wait.</p>
   <p>Recommendation: a <b>${T.ic} ${T.n}</b> for <b>${$m(T.cost)}</b>. It adds about <b>${T.cap} units/wk</b> and costs ${$m(T.up)}/wk to run.${C?` A cheaper ${C.n} (${$m(C.cost)}, +${C.cap}/wk) would ease it, not fix it.`:''}</p><p class="small mut">Fleet: ${S.fleet.length} truck${S.fleet.length>1?'s':''}, average age ${age} yr.</p>`,[
   choice(`Buy the ${T.n} (${$m(T.cost)})`,'good',()=>{F.open=0;F.short=0;F.cd=S.week+8;fleetBuy(P.best);save();render()},`+${T.cap} units/wk`),
   ...(C?[choice(`Go cheaper: ${C.n} (${$m(C.cost)})`,'sec',()=>{F.open=0;F.short=0;F.cd=S.week+6;fleetBuy(P.cheap);save();render()},`+${C.cap} units/wk`)]:[]),
@@ -4615,7 +4615,7 @@ function fleetSvcPitch(){const F=fpState();if(F.open>S.week||!S.fleet.length)ret
   choice('Put it off','bad',()=>{F.open=0;due.defer=(due.defer||0)+1;due.svc=S.week+ri(6,10)},'Saves cash now, higher breakdown risk')])}
 // deferred maintenance bites: a truck that keeps getting put off can break down on its own
 function fleetDeferRisk(){S.fleet.forEach(t=>{if(!t.defer||t.down>S.week)return;if(Math.random()<0.035*t.defer){const T=TRUCKS[t.t];const c=Math.round(T.cost*0.09*(typeof infl==='function'?infl():1)/50)*50;spend(c);t.down=S.week+2;t.defer=0;t.svc=S.week+ri(30,50);news('🚨 '+t.name+' broke down after its maintenance was put off: '+$m(c)+' in emergency repairs and 2 weeks out of service.')}})}
-const _wkF2=weekly;weekly=function(){_wkF2();try{fleetDeferRisk();if(S.week%2===0)fleetBuyPitch();else fleetSvcPitch()}catch(e){console.error(e)}};
+const _wkF2=weekly;weekly=function(){_wkF2();try{fleetDeferRisk();fleetBuyPitch();if(S.week%2)fleetSvcPitch()}catch(e){console.error(e)}};
 
 /* ===== P30: the assistant manager tells you when the branch is out of room and what to do about it ===== */
 function amVoice(){const by=rk=>S.staff.filter(s=>s.rk===rk).sort((a,b)=>(b.lvl||0)-(a.lvl||0))[0];const s=by('asstmgr')||by('opsmgr')||by('manager');if(!s)return null;
@@ -4707,6 +4707,7 @@ function cvPlanTrips(){const C=O3.cv,cu=C.cust,fk=C.fk,AZ=C.AZ,lx=cu.loadX;const
  C.fq.push({fn:()=>{cvLeave()}},{go:[C.home.x,C.home.z]},{face:fkAng(-1,0)})}
 function cvLeave(){const C=O3.cv,cu=C.cust;if(!cu)return;cu.state='out';const lane=cu.lane;
  C.cq=[{wait:0.6},{go:[Math.min(cu.gx-0.6,C.E-1.7),lane],rev:1},{go:[cu.gx,C.N+5]},{fn:()=>{C.room.remove(cu.v.g);C.cust=null;C.wait=3+Math.random()*5}}]}
+function cvTruckHome(){const C=O3.cv;if(!C||!C.tk)return true;return C.tk.st==='home'&&!C.tk.q.length}
 // our truck: home → out on a delivery → away → back home
 function cvTruck(C,dt){const tk=C.tk;if(!tk)return;const g=tk.g,gx=C.X1-1.6;
  if(tk.q.length){cvStep(tk,tk.q,dt,2.2,vAng);return}
@@ -4851,6 +4852,151 @@ function econMigrate(){if(!S||S.econV)return;S.econV=1;if(!S.week||S.week<2)retu
 {const _ldEC=load;load=function(){const r=_ldEC.apply(this,arguments);try{if(r)econMigrate()}catch(e){console.error(e)}return r}}
 {const _snEC=typeof startNew==='function'?startNew:null;if(_snEC)startNew=function(){const r=_snEC.apply(this,arguments);if(S)S.econV=1;return r}}
 AVGM.sal=6e3;STRM.sal=7.5e3;
+
+/* ===== P34: mobile simplification — inbox, delegation, five tabs, monthly digest, upgrade packs, gradual unlocks, play style ===== */
+// ---------- play style ----------
+function relaxed(){return S&&S.mode==='relaxed'}
+function delegateWho(){if(!S)return null;const m=S.staff.find(s=>s.rk==='asstmgr')||S.staff.find(s=>s.rk==='opsmgr');if(m)return m.name.split(' ')[0];return relaxed()?'Your crew':null}
+function setMode(m){S.mode=m;if(m==='relaxed')S.autoRest=true;save();render()}
+
+// ---------- inbox: weekly events wait here instead of stopping the clock ----------
+let INBOX=[],IN_TICK=false,INB_ID=1;
+const INB_MUST=/Chapter|Out of (Cash|Money)|bankrupt|corporate|CEO mode|CEO approval|Challenge Complete|New company|Welcome|Restore|Backup|Saved|Not enough|Start over|Shop|Already yours|Purchase|Unlock/i;
+const INB_BIG=/another truck|We'|Pitch from|found |recruiter|Go public|Acquisition|Supply Contract|Poaching|move|Offer\b/i;
+const INB_NO=/not now|^pass|put it off|later|skip|politely|decline|ignore|^no\b|not this|back to work|okay|got it|hold the line|deny|reject|^keep|let them go|nice|^ok$/i;
+const INB_REC=/approve|payment plan|file the notice|split it fairly|split it into|team workshop|paid leave|redo the takeoff|bid it as specified|honor|voluntary ot|hold fair|rebuild|appeal to loyalty|tell customers the truth|talk about it|full safety|send the gift|sure/i;
+const inbTxt=b=>String(b.t||'').split(/<br/i)[0].replace(/<[^>]*>/g,'').trim();
+function inbDef(btns){if(btns.length<2)return 0;const i=btns.findIndex(b=>INB_NO.test(inbTxt(b)));return i>=0?i:btns.length-1}
+function inbRec(btns){const i=btns.findIndex(b=>INB_REC.test(inbTxt(b)));return i>=0?i:inbDef(btns)}
+function inboxOn(){return S&&!S.draft&&S.inbox!==false}
+function inboxAdd(title,html,btns){btns=btns&&btns.length?btns:[{t:'OK'}];const it={id:INB_ID++,title,html,btns,w:S.week,info:btns.length<2};
+ const who=delegateWho();if(!it.info&&who&&!INB_BIG.test(title)){inboxDo(it,inbRec(btns),who);return}
+ INBOX.push(it);news('📥 '+String(title).replace(/<[^>]*>/g,''));try{sfx&&sfx('pop')}catch(e){}}
+function inboxDo(it,i,who){const b=it.btns[i];INBOX=INBOX.filter(x=>x!==it);try{if(b&&b.f)b.f()}catch(e){console.error(e)}
+ if(who&&!it.info){S.dlog=S.dlog||[];S.dlog.push({w:S.week,who,t:String(it.title).replace(/<[^>]*>/g,''),c:inbTxt(b||{t:''})});S.dlog=S.dlog.slice(-40)}}
+function inboxAct(id,i){const it=INBOX.find(x=>x.id===id);if(!it)return;inboxDo(it,i,null);renderHud();render();save()}
+{const _mdS=modal;modal=function(title,html,btns){if(IN_TICK&&inboxOn()&&!INB_MUST.test(title)){inboxAdd(title,html,btns);return}return _mdS(title,html,btns)}}
+{const _mfS=modalFirst;modalFirst=function(t,h,b){if(IN_TICK&&inboxOn()&&!INB_MUST.test(t)){inboxAdd(t,h,b);return}return _mfS(t,h,b)}}
+{const _tkS=tick;tick=function(){IN_TICK=true;try{_tkS()}finally{IN_TICK=false}}}
+function inboxAge(){const to=relaxed()?2:4;INBOX.slice().forEach(it=>{const age=S.week-it.w;if(it.info){if(age>=6)INBOX=INBOX.filter(x=>x!==it)}else if(age>=to)inboxDo(it,inbDef(it.btns),'Auto ('+to+' wks)')})}
+function inboxHtml(){if(!INBOX.length)return `<div class="card"><p class="mut" style="margin:0">📭 All caught up. New events land here instead of stopping the clock.${delegateWho()?' '+esc(delegateWho())+' handles routine calls for you.':''}</p></div>`+digestLogHtml();
+ const to=relaxed()?2:4;return INBOX.slice().reverse().map(it=>`<div class="card"><div class="between"><b>${it.title}</b><span class="small mut">${S.week-it.w?S.week-it.w+'w ago':'new'}</span></div>${it.html}
+  <div class="row" style="justify-content:flex-end;gap:6px;margin-top:10px;flex-wrap:wrap">${it.btns.map((b,i)=>`<button class="btn sm ${b.c||''}" onclick="inboxAct(${it.id},${i})">${b.t}</button>`).join('')}</div>
+  ${it.info?'':`<p class="small mut" style="margin:6px 0 0">If you don't decide within ${to} weeks: <b>${esc(inbTxt(it.btns[inbDef(it.btns)]))}</b></p>`}</div>`).join('')+digestLogHtml()}
+function digestLogHtml(){const L=(S.dlog||[]).slice(-8).reverse();if(!L.length)return '';return `<div class="card"><h2>🗂️ Handled for you</h2>${L.map(d=>`<p class="small" style="margin:4px 0"><span class="mut">${dateStr(d.w)}</span> · <b>${esc(d.who)}</b>: ${esc(d.t)} → ${esc(d.c)}</p>`).join('')}</div>`}
+PANELS.inbox=['📥','Inbox',()=>inboxHtml()];
+
+// ---------- monthly digest ----------
+function ledTot(){const o={rev:0,cogs:0,opex:0,oth:0};Object.values(S.led||{}).forEach(L=>{o.rev+=L.rev||0;o.cogs+=L.cogs||0;o.opex+=L.opex||0;o.oth+=L.oth||0});return o}
+function digestWeek(){if(!S.dg){S.dg=Object.assign(ledTot(),{money:S.money,w:S.week});return}if(S.week-S.dg.w<4)return;
+ const t=ledTot(),d=S.dg;const rev=t.rev-d.rev,gp=rev-(t.cogs-d.cogs),opex=t.opex-d.opex,net=gp-opex+(t.oth-d.oth),cash=S.money-d.money;
+ const late=S.orders.filter(o=>S.week>o.dueW).length,out=S.lines.filter(k=>S.inv[k].u<1).length,tired=S.staff.filter(s=>s.energy<25||s.morale<25).length,open=S.rfqs.filter(r=>!inBid(r.id)).length;
+ const att=[];if(late)att.push(['⏰',late+' order'+(late>1?'s':'')+' past due','menu']);if(out)att.push(['📦',out+' line'+(out>1?'s':'')+' out of stock','stock']);if(tired)att.push(['😩',tired+' worn-out employee'+(tired>1?'s':''),'team']);if(INBOX.filter(x=>!x.info).length)att.push(['📥',INBOX.filter(x=>!x.info).length+' decision'+(INBOX.length>1?'s':'')+' waiting','inbox']);if(open&&S.bids.length<bidCap())att.push(['📝',open+' bid request'+(open>1?'s':'')+' open','create']);if(S.money<0)att.push(['⚠️','Cash is negative','business']);
+ const dl=(S.dlog||[]).filter(x=>x.w>d.w);
+ const row=(l,v,c)=>`<div class="between small" style="padding:3px 0"><span>${l}</span><b class="${c||''}">${v}</b></div>`;
+ const html=row('Revenue',$m(rev))+row('Gross profit',$m(gp)+(rev?' · '+(100*gp/rev).toFixed(1)+'%':''))+row('Operating costs',$m(opex))+row('Net',$m(net),net>=0?'good':'bad')+row('Cash change',(cash>=0?'+':'')+$m(cash),cash>=0?'good':'bad')+
+  (att.length?`<p class="small" style="margin:8px 0 2px"><b>Needs attention</b></p>`+att.slice(0,3).map(a=>`<p class="small" style="margin:2px 0">${a[0]} ${a[1]}</p>`).join(''):`<p class="small good" style="margin:8px 0 0">✅ Nothing urgent.</p>`)+
+  (dl.length?`<p class="small" style="margin:8px 0 2px"><b>Handled for you</b></p>`+dl.slice(-4).map(x=>`<p class="small mut" style="margin:2px 0">${esc(x.who)}: ${esc(x.t)} → ${esc(x.c)}</p>`).join(''):'');
+ S.dg=Object.assign(t,{money:S.money,w:S.week});
+ INBOX=INBOX.filter(x=>!x.digest);INBOX.push({id:INB_ID++,title:'📊 Monthly digest · '+dateStr(S.week),html,btns:[{t:'Got it'}].concat(att.length?[{t:'Go: '+att[0][1],go:att[0][2],f:()=>setTimeout(()=>go(att[0][2]),0)}]:[]),w:S.week,info:true,digest:true});news('📊 Your monthly digest is in the inbox.')}
+
+// ---------- gradual unlocks (new games) ----------
+const UNLOCK={business:3,research:4,bids:8};
+function lockLeft(k){if(!S||S.gw0==null||!UNLOCK[k])return 0;return Math.max(0,S.gw0+UNLOCK[k]-S.week)}
+function lockedNote(k){const n=lockLeft(k);news('🔒 '+({business:'Money',research:'Grow',bids:'Bidding'}[k])+' opens in '+n+' week'+(n>1?'s':'')+'. Keep the counter moving!');renderFloat()}
+function tabGo(k){if(k==='research'&&lockLeft('research'))return lockedNote('research');if(k==='business'&&lockLeft('business'))return lockedNote('business');if(k==='create'&&lockLeft('bids'))k='stock';go(k)}
+
+// ---------- five tabs with sub-sections ----------
+const TAB5=[['menu','🏢','Yard',['menu']],['team','👥','People',['team']],['create','📝','Sales',['create','stock']],['research','🌱','Grow',['research','office','goals','install']],['business','💰','Money',['business','finance','bank','rank','insights']]];
+const _rdS5=renderDock;renderDock=function(){if(!S)return;if(S.ceo)return _rdS5();const aff=resAvailN();const tired=S.staff.filter(s=>s.energy<25||s.morale<25).length;const out=S.lines.filter(k=>S.inv[k].u<1).length;const rq=lockLeft('bids')?0:S.rfqs.filter(r=>!inBid(r.id)).length;
+ const badge={menu:S.orders.some(o=>S.week>o.dueW)?'!':'',team:tired||'',create:(S.bids.length<bidCap()?rq:0)+out||'',research:aff>9?'9+':aff||'',business:S.money<50e3?'$':''};
+ const html=TAB5.map(([k,i,n,sub])=>{const lk=(k==='research'&&lockLeft('research'))||(k==='business'&&lockLeft('business'));return `<button class="dk ${k==='create'?'fab':''} ${sub.includes(S.tab)?'on':''}" style="${lk?'opacity:.45':''}" onclick="tabGo('${k}')"><span>${lk?'🔒':i}</span>${n}${!lk&&badge[k]!==''?`<i>${badge[k]}</i>`:''}</button>`}).join('');
+ const el=document.getElementById('dock');if(el.innerHTML!==html)el.innerHTML=html};
+function segHtml(items){return `<div class="row" style="gap:6px;margin:0 0 10px;flex-wrap:wrap">${items.map(([k,l,lk])=>`<button class="btn sm ${S.tab===k?'':'sec'}" ${lk?'disabled':''} onclick="go('${k}')">${lk?'🔒 '+l+' · '+lk+'w':l}</button>`).join('')}</div>`}
+function segFor(k){if(['create','stock'].includes(k))return segHtml([['create','📝 Bids',lockLeft('bids')],['stock','📦 Stock']]);
+ if(['research','office','goals'].includes(k))return segHtml([['research','🧠 Upgrades'],['office','🏗️ Facility'],['goals','🏆 Challenges']].concat(hasR('b_install')?[['install','🛠️ Installs']]:[]));return ''}
+['create','stock','research','office','goals','install'].forEach(k=>{if(!PANELS[k])return;const f=PANELS[k][2];PANELS[k][2]=()=>segFor(k)+f()});
+
+// ---------- HUD inbox button ----------
+{const _rhS=renderHud;renderHud=function(){_rhS.apply(this,arguments);if(!S)return;const sp=document.querySelector('#hud .spd');if(!sp||sp.querySelector('.inbx'))return;const n=INBOX.filter(x=>!x.info).length,m=INBOX.length;
+ sp.insertAdjacentHTML('afterbegin',`<button class="inbx" onclick="go('inbox')" title="Inbox" style="position:relative">📥${m?`<i style="position:absolute;top:-6px;right:-4px;background:${n?'var(--bad)':'#3fa9ff'};color:#fff;font-style:normal;font-size:10px;font-weight:900;border-radius:99px;padding:1px 5px">${m}</i>`:''}</button>`)}}
+
+// ---------- upgrade packs: bundle small upgrades so the tree is about a third the size ----------
+const PACKS=[];{const roman=['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];const cats=[...new Set(RES.map(r=>r.t))];
+ cats.forEach(t=>{const rs=RES.filter(r=>r.t===t);if(/Product Lines/i.test(t)){rs.forEach(r=>PACKS.push({t,n:r.n,ks:[r.k]}));return}
+  const depth=r=>!r.req||!r.req.length?0:1+Math.max(...r.req.map(k=>{const q=RES.find(x=>x.k===k);return q?depth(q):0}));
+  const srt=rs.slice().sort((a,b)=>depth(a)-depth(b)||(a.from||0)-(b.from||0)||a.rp-b.rp);const cs=srt.length>=20?5:srt.length>=8?4:Math.min(4,srt.length);for(let i=0,j=0;i<srt.length;i+=cs,j++){const ch=srt.slice(i,i+cs);PACKS.push({t,n:t+' '+roman[j],ks:ch.map(r=>r.k)})}})}
+function packPlan(P){const R=P.ks.map(k=>RES.find(r=>r.k===k));const sim=new Set(S.res);const buy=[];let len=S.res.length,kp=0,cc=0;
+ for(let pass=0;pass<3;pass++)R.forEach(r=>{if(sim.has(r.k)||buy.includes(r))return;if(r.from&&yearOf(S.week)<r.from)return;if(r.req&&!r.req.every(k=>sim.has(k)))return;buy.push(r);sim.add(r.k);kp+=Math.round(r.rp*1.4*(1+len*0.018)*fx('res_'+r.k));cc+=Math.round(r.c*1.8*(1+len*0.025)*fx('res_'+r.k)/1000)*1000;len++});
+ return {R,buy,kp:Math.round(kp*0.85),cc:Math.round(cc*0.85/1000)*1000,kpF:kp,ccF:cc,done:R.every(r=>has(r.k))}}
+function buyPack(i){const P=PACKS[i];const pl=packPlan(P);if(!pl.buy.length||S.rp<pl.kp||S.money<pl.cc)return;const dk=pl.kpF-pl.kp,dc=pl.ccF-pl.cc;S.rp+=dk+1;S.money+=dc+1000;
+ pl.buy.forEach(r=>{if(resAvail(r))doResearch(r.k)});led('opex',-dc);news('🌱 '+P.n+' complete');save();render();renderHud()}
+function packRow(P,i){const pl=packPlan(P);const why=pl.done?'':pl.buy.length?(pl.buy.length<pl.R.filter(r=>!has(r.k)).length?pl.buy.length+' of '+pl.R.filter(r=>!has(r.k)).length+' ready now':''):(()=>{const r=pl.R.find(r=>!has(r.k));return r.from&&yearOf(S.week)<r.from?'Opens '+r.from:r.req?'Requires '+r.req.filter(k=>!has(k)).map(k=>(RES.find(y=>y.k===k)||{n:k}).n).join(', '):''})();
+ return `<div class="between small" style="padding:8px 0;border-bottom:1px solid rgba(140,210,180,.15);gap:8px"><span style="flex:1"><b>${esc(P.n)}</b>${pl.R.length>1?`<br><span class="mut">${pl.R.map(r=>(has(r.k)?'✓ ':'')+esc(r.n)).join(' · ')}</span>`:''}${why?`<br><span class="mut">${why}</span>`:''}</span>${pl.done?'<span class="good">✓ Done</span>':`<button class="btn sm" ${pl.buy.length&&S.rp>=pl.kp&&S.money>=pl.cc?'':'disabled'} onclick="buyPack(${i})">${pl.kp} KP · ${$m(pl.cc)}</button>`}</div>`}
+resAvailN=function(){return PACKS.filter(P=>{const pl=packPlan(P);return pl.buy.length&&S.rp>=pl.kp&&S.money>=pl.cc}).length};
+researchHtml=function(){const groups=[...new Set(PACKS.map(p=>p.t))];S.bopen=S.bopen||{};const ready=PACKS.map((P,i)=>[P,i]).filter(([P])=>{const pl=packPlan(P);return pl.buy.length&&S.rp>=pl.kp&&S.money>=pl.cc});
+ return `<div class="card"><div class="between"><b>🧠 ${Math.floor(S.rp)} KP</b><span class="small mut">+${rpRate().toFixed(1)}/week · ${PACKS.filter(P=>packPlan(P).done).length}/${PACKS.length} done</span></div><p class="mut small" style="margin-bottom:0">Upgrades come in packs. A pack buys everything in it that's ready, at 15% off.</p></div>
+ ${ready.length?`<div class="card"><h2>✨ Ready now</h2>${ready.slice(0,4).map(([P,i])=>packRow(P,i)).join('')}</div>`:''}`+
+ groups.map(t=>{const ps=PACKS.map((P,i)=>[P,i]).filter(([P])=>P.t===t);return `<details class="sec" ${S.bopen['r_'+t]?'open':''} ontoggle="if(S.bopen['r_${t}']!==this.open){S.bopen['r_${t}']=this.open;render()}"><summary><b>${t}</b><span class="small mut">${ps.filter(([P])=>packPlan(P).done).length}/${ps.length}</span></summary><div class="secb">${S.bopen['r_'+t]?ps.map(([P,i])=>packRow(P,i)).join(''):''}</div></details>`}).join('')+
+ `<div class="card"><div class="between"><h2 style="margin:0">🎓 Crew clinics</h2><span class="small mut">${drillCost()} KP each</span></div><p class="mut small">Everyone on staff gains +3 in one skill.</p><div class="grid">${CATS.map(c=>opt(c.n,false,`doDrill('${c.k}')`,S.rp<drillCost(),c.full)).join('')}</div></div>`};
+PANELS.research[2]=()=>segFor('research')+researchHtml();
+
+// ---------- play style card in Settings ----------
+{const _stS=settingsHtml;settingsHtml=function(){return `<div class="card"><h2>Play style</h2><div class="grid">
+ <button class="opt ${relaxed()?'on':''}" onclick="setMode('relaxed')">🌤️ Relaxed<small>Your crew handles routine calls, auto-restock is on, decisions wait 2 weeks</small></button>
+ <button class="opt ${relaxed()?'':'on'}" onclick="setMode('hands')">🧰 Hands-on<small>You make every call unless you have an assistant manager; decisions wait 4 weeks</small></button></div></div>`+_stS.apply(this,arguments)}}
+
+// ---------- weekly + new-game hooks ----------
+{const _wkS=weekly;weekly=function(){_wkS.apply(this,arguments);try{inboxAge();digestWeek()}catch(e){console.error(e)}}}
+{const _snS=startNew;startNew=function(){const r=_snS.apply(this,arguments);if(S){S.mode=S.mode||'relaxed';S.autoRest=true;S.gw0=S.week}return r}}
+
+// ---------- walkthrough for the five-tab layout ----------
+const TOUR5=[
+ {t:()=>`Welcome to ${esc(S.founder.studio)}!`,h:()=>`<p>It's March 2000, the first week of your fiscal year. You have a rented lot, a pickup truck and some stock. Your goal: become the region's go-to fence and deck supplier.</p><p>This quick tour takes about a minute. The game is paused while you look around.</p>`},
+ {sel:'#hud .res',t:()=>'Your numbers',h:()=>`<ul><li>💵 <b>Money</b>: pays wages, rent, stock and trucks.</li><li>⭐ <b>Reputation</b>: how many contractors know and trust you.</li><li>🧠 <b>Know-how</b>: spend it on upgrades.</li><li>🙂 <b>Integrity</b>: tough calls raise or lower it.</li></ul>`},
+ {sel:'#hud .spd',t:()=>'Time and your inbox',h:()=>`<p>Pause, play or fast-forward. Spring and summer are peak season; winter is slow.</p><p>📥 <b>Inbox</b>: vendor offers, crew problems and manager pitches wait here instead of stopping the game. Each one says what happens if you let it ride. Once a month a <b>digest</b> lands here with your numbers and what needs attention.</p>`},
+ {sel:'#officeWrap',office:1,t:()=>'Your branch',h:()=>`<p>Stock lives out back in the fenced yard, and the stacks grow as you buy. Tap anyone to see their profile.</p><p>Drag to rotate the view, pinch to zoom.</p>`},
+ {d5:0,t:()=>'🏢 Yard',h:()=>`<p>Last week's sales, your orders board, and <b>who's doing what</b>. Everyone gets a job: counter, outside sales, yard, delivery, training or rest.</p>`},
+ {d5:1,t:()=>'👥 People',h:()=>`<p>Hire counter staff, yard hands, drivers, estimators and reps. Office roles need a desk; yard crew needs room in the crew area.</p><p>Hire an <b>assistant manager</b> and they'll handle routine calls for you.</p>`},
+ {d5:2,t:()=>'📝 Sales',h:()=>`<p><b>Stock</b>: your counter only sells what's in the yard. Auto-restock keeps the bins full.</p><p><b>Bids</b>: contractors and homeowners send requests for quotes. ${lockLeft('bids')?'Bidding opens in your second month, once the counter is running.':'Win a bid and the order lands on your board.'}</p>`},
+ {d5:3,t:()=>'🌱 Grow',h:()=>`<p>Upgrade packs, new product lines, your facility and challenges. ${lockLeft('research')?'Opens after your first month.':'A badge shows when a pack is ready.'}</p>`},
+ {d5:4,t:()=>'💰 Money',h:()=>`<p>Fiscal-year results, customer accounts, your fleet, the bank, and how you stack up against rivals. ${lockLeft('business')?'Opens in a few weeks.':''}</p>`},
+ {t:()=>'Pick your pace',h:()=>`<p>You're on <b>${relaxed()?'🌤️ Relaxed':'🧰 Hands-on'}</b>.</p><ul><li><b>Relaxed</b>: your crew handles routine calls and decisions wait 2 weeks.</li><li><b>Hands-on</b>: you make every call until you hire a manager; decisions wait 4 weeks.</li></ul><p>Switch any time in ⚙️ Settings.</p>`},
+ {t:()=>'How to run a great yard',h:()=>`<ul><li>Keep your best sellers <b>in stock</b>. Empty bins send customers to rivals.</li><li>Every truck needs someone on <b>🚚 Delivery</b>.</li><li>Watch <b>commodity prices</b>. Stock bought cheap and sold at today's price is pure margin.</li><li>Real distributor margins are thin: 16–25% gross on most lines. Watch payroll.</li></ul>`,last:1}];
+const DK5={Branch:'Yard',Stock:'Sales',Bid:'Sales',Upgrades:'Grow',Business:'Money'};
+let TOUR5_ON=false;
+function tour5(){if(TOUR5_ON||typeof TUT==='undefined'||typeof tutTarget!=='function')return;TOUR5_ON=true;
+ TUT.length=0;TOUR5.forEach(x=>TUT.push(x));if(typeof TUT0!=='undefined'&&TUT0)TUT0=TOUR5.slice();
+ const _tt=tutTarget;tutTarget=function(st){if(st&&st.d5!=null)return S&&S.ceo?null:document.querySelectorAll('#dock .dk')[st.d5];return _tt(st)};
+ const _ts=tutShow;tutShow=function(){_ts.apply(this,arguments);if(lockLeft('bids'))document.querySelectorAll('#tut .tb button').forEach(b=>{if(/Quote my first job/.test(b.textContent))b.textContent='Check the stock'})};
+ const _te=tutEnd;tutEnd=function(make){if(make&&lockLeft('bids')){_te(false);go('stock');return}return _te(make)};
+ if(typeof GUIDES!=='undefined')GUIDES.forEach(G=>G.steps.forEach(st=>{if(S&&S.ceo)return;if(DK5[st.dk]&&!(G.k==='ceo'))st.dk=DK5[st.dk];if(G.k==='stockout')st.go='stock';if(G.k==='research'){st.go='research';st.h=st.h.replace(/Spend it on/,'Spend it on upgrade packs:')}}))}
+addEventListener('DOMContentLoaded',()=>setTimeout(tour5,0));setTimeout(tour5,50);
+
+// ---------- pending decisions survive a reload ----------
+// Each choice is dry-run once: run it, record exactly what it changes, then put the game back the way it was.
+// The recorded change (numbers as +/-, everything else as the new value) is saved with the inbox and applied if picked later.
+const DRY_SKIP={inbx:1,news:0};let DRY=false;
+function dryWalk(o,m){if(o===null||typeof o!=='object'||m.has(o))return;m.set(o,Array.isArray(o)?o.slice():Object.assign({},o));(Array.isArray(o)?o:Object.keys(o).filter(k=>!DRY_SKIP[k]).map(k=>o[k])).forEach(v=>dryWalk(v,m))}
+function dryRevert(m){m.forEach((c,o)=>{if(Array.isArray(o)){o.length=0;c.forEach(v=>o.push(v))}else{Object.keys(o).forEach(k=>{if(!(k in c))delete o[k]});Object.assign(o,c)}})}
+const ekey=v=>v&&typeof v==='object'&&v.id!=null?'#'+v.id:JSON.stringify(v);
+function dDiff(a,b){if(typeof a==='number'&&typeof b==='number')return a===b?undefined:{d:b-a};
+ if(a&&b&&typeof a==='object'&&typeof b==='object'){if(Array.isArray(a)&&Array.isArray(b)){const ka=new Map(a.map(v=>[ekey(v),v])),kb=new Map(b.map(v=>[ekey(v),v]));const add=[],del=[],mod={};
+   b.forEach((v,i)=>{const k=ekey(v);if(!ka.has(k))add.push([i,v]);else if(k[0]==='#'){const p=dDiff(ka.get(k),v);if(p)mod[k]=p}});a.forEach(v=>{const k=ekey(v);if(!kb.has(k))del.push(k)});
+   return add.length||del.length||Object.keys(mod).length?{a:{add,del,mod}}:undefined}
+  if(!Array.isArray(a)&&!Array.isArray(b)){const o={};let n=0;new Set([...Object.keys(a),...Object.keys(b)]).forEach(k=>{if(DRY_SKIP[k])return;if(!(k in b)){o[k]={x:1};n++}else if(!(k in a)){o[k]={v:b[k]};n++}else{const p=dDiff(a[k],b[k]);if(p){o[k]=p;n++}}});return n?{o}:undefined}}
+ return JSON.stringify(a)===JSON.stringify(b)?undefined:{v:b}}
+function dApply(t,p){if(p.o){Object.keys(p.o).forEach(k=>{const q=p.o[k];if(q.x)delete t[k];else if('v' in q)t[k]=JSON.parse(JSON.stringify(q.v));else if('d' in q)t[k]=(typeof t[k]==='number'?t[k]:0)+q.d;else if(t[k]&&typeof t[k]==='object')dApply(t[k],q);else if(q.a)t[k]=q.a.add.map(x=>x[1])});return}
+ if(p.a&&Array.isArray(t)){const A=p.a;Object.keys(A.mod).forEach(k=>{const e=t.find(v=>ekey(v)===k);if(e)dApply(e,A.mod[k])});A.del.forEach(k=>{const i=t.findIndex(v=>ekey(v)===k);if(i>=0)t.splice(i,1)});A.add.forEach(([i,v])=>{if(!t.some(x=>ekey(x)===ekey(v)))t.splice(Math.min(i,t.length),0,JSON.parse(JSON.stringify(v)))})}}
+function dryRun(f){if(!f)return {p:null,m:[]};const m=new Map();dryWalk(S,m);const before=JSON.parse(JSON.stringify(S,(k,v)=>DRY_SKIP[k]?undefined:v));const ms=[];
+ const sv={modal,modalFirst,render,renderHud,save,go,setSpeed,showModal,sfx:window.sfx};modal=(t,h)=>ms.push([t,h]);modalFirst=modal;render=renderHud=save=go=setSpeed=showModal=()=>{};window.sfx=()=>{};DRY=true;let p=null;
+ try{f();p=dDiff(before,JSON.parse(JSON.stringify(S,(k,v)=>DRY_SKIP[k]?undefined:v)))||null}catch(e){console.error('dry',e)}finally{DRY=false;Object.assign(window,{});modal=sv.modal;modalFirst=sv.modalFirst;render=sv.render;renderHud=sv.renderHud;save=sv.save;go=sv.go;setSpeed=sv.setSpeed;showModal=sv.showModal;window.sfx=sv.sfx;dryRevert(m)}
+ return {p,m:ms}}
+function inbPack(it){if(!it.rec){it.rec=it.btns.map(b=>{const g=b.go||null;if(it.info||!b.f)return {t:b.t,c:b.c,go:g};const r=dryRun(b.f);return {t:b.t,c:b.c,p:r.p,m:r.m,go:g}})}
+ return {title:it.title,html:it.html,w:it.w,info:it.info,digest:it.digest,btns:it.rec}}
+function inbUnpack(r){return {id:INB_ID++,title:r.title,html:r.html,w:r.w,info:r.info,digest:r.digest,rec:r.btns,btns:r.btns.map(b=>({t:b.t,c:b.c,go:b.go,f:()=>{if(b.p)dApply(S,b.p);(b.m||[]).forEach(([t,h])=>modal(t,h));if(b.go)setTimeout(()=>go(b.go),0)}}))}}
+{const _svI=save;save=function(){if(S&&!DRY){try{S.inbx=INBOX.map(inbPack)}catch(e){console.error(e)}}return _svI.apply(this,arguments)}}
+{const _ldI=load;load=function(){const r=_ldI.apply(this,arguments);try{if(r&&S&&S.inbx){INBOX=S.inbx.map(inbUnpack)}else INBOX=[]}catch(e){console.error(e);INBOX=[]}return r}}
 
 if(typeof document!=='undefined'&&document.getElementById('main'))addEventListener('DOMContentLoaded',boot);
 </script>

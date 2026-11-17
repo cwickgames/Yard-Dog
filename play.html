@@ -4998,6 +4998,73 @@ function inbUnpack(r){return {id:INB_ID++,title:r.title,html:r.html,w:r.w,info:r
 {const _svI=save;save=function(){if(S&&!DRY){try{S.inbx=INBOX.map(inbPack)}catch(e){console.error(e)}}return _svI.apply(this,arguments)}}
 {const _ldI=load;load=function(){const r=_ldI.apply(this,arguments);try{if(r&&S&&S.inbx){INBOX=S.inbx.map(inbUnpack)}else INBOX=[]}catch(e){console.error(e);INBOX=[]}return r}}
 
+/* ===== P35: 3D performance — fewer rebuilds, graphics quality levels, auto-downgrade on slow devices ===== */
+// 1) Rebuild the whole branch only when people, rooms or upgrades change. Cosmetic changes
+//    (yard stock heights, latest jobs on the board, trophies) refresh at most every 45 seconds.
+{let softSig='',softT=-1e9;const _rsP=roomSig;
+ roomSig=function(){const full=_rsP();if(!S||S.ceo)return full;let soft;try{soft=[wonJobs().slice(-4).map(g=>g.name).join(','),trophies(),yardSig()].join('#')}catch(e){return full}
+  const now=performance.now();if(!softSig||(soft!==softSig&&now-softT>45000)){softSig=soft;softT=now}
+  return full.replace('#'+soft+'#','#'+softSig+'#')}}
+
+// 2) Graphics quality: high / balanced / low, with auto picking for this device
+const GFX_L={high:{pr:1.75,sh:2048,rig:true,min:0,fps:0},balanced:{pr:1.25,sh:1024,rig:false,min:0.7,fps:0},low:{pr:1,sh:0,rig:false,min:99,fps:30}};
+function gfxPref(){try{return localStorage.getItem('yd_gfx')||'auto'}catch(e){return 'auto'}}
+let GFX=(()=>{const p=gfxPref();return p==='auto'?'balanced':p})();
+function gfxApply(){const L=GFX_L[GFX];if(!O3.renderer)return;const r=O3.renderer;r.setPixelRatio(Math.min(L.pr,window.devicePixelRatio||1));
+ if(O3.sun){const want=L.sh>0;if(O3.sun.castShadow!==want)O3.sun.castShadow=want;if(want&&O3.sun.shadow.mapSize.width!==L.sh){O3.sun.shadow.mapSize.width=L.sh;O3.sun.shadow.mapSize.height=L.sh;if(O3.sun.shadow.map){O3.sun.shadow.map.dispose();O3.sun.shadow.map=null}}}
+ if(O3.room)gfxPrune(O3.room)}
+function gfxPrune(room){const L=GFX_L[GFX];const rigG=new Set(Object.values(O3.rigs||{}).map(R=>R.g));
+ const inRig=o=>{for(let p=o;p;p=p.parent)if(rigG.has(p))return true;return false};
+ room.traverse(o=>{if(!o.isMesh)return;if(o.userData.cs==null)o.userData.cs=!!o.castShadow;if(!o.userData.cs)return;
+  if(inRig(o)){o.castShadow=L.rig;return}const g=o.geometry,pa=g&&g.parameters;let sz=1;if(pa){if(pa.width!=null)sz=Math.max(pa.width,pa.height||0,pa.depth||0);else if(pa.radius!=null)sz=pa.radius*2}
+  o.castShadow=sz>=L.min})}
+function gfxSet(q){try{localStorage.setItem('yd_gfx',q)}catch(e){}GFX=q==='auto'?'balanced':q;GAUTO.n=0;GAUTO.slow=0;gfxApply();if(typeof render==='function')render()}
+{const _brP=buildRoom;buildRoom=function(){const r=_brP.apply(this,arguments);try{gfxApply()}catch(e){console.error(e)}return r}}
+
+// 3) Frame cap on low, and auto-downgrade when frames are slow
+const GAUTO={last:0,acc:0,n:0,slow:0,skipT:0};
+{const _d3P=draw3D;draw3D=function(ts){const L=GFX_L[GFX];
+  if(L.fps&&ts-GAUTO.skipT<1000/L.fps-2){O3.raf=requestAnimationFrame(draw3D);return}GAUTO.skipT=ts;
+  if(GAUTO.last&&!document.hidden){const dt=ts-GAUTO.last;if(dt<250){GAUTO.acc+=dt;GAUTO.n++}}GAUTO.last=ts;
+  if(GAUTO.n>=90){const avg=GAUTO.acc/GAUTO.n;GAUTO.acc=0;GAUTO.n=0;
+   if(gfxPref()==='auto'){const cap=L.fps?1000/L.fps:16.7;if(avg>cap*1.9)GAUTO.slow++;else GAUTO.slow=Math.max(0,GAUTO.slow-1);
+    if(GAUTO.slow>=2){GAUTO.slow=0;if(GFX==='high')GFX='balanced';else if(GFX==='balanced'){GFX='low';try{news('🖥️ Graphics set to Low to keep the game smooth. Change it in ⚙️ Settings.')}catch(e){}}gfxApply()}}}
+  return _d3P(ts)}}
+
+// 4) Settings card
+{const _stP=settingsHtml;settingsHtml=function(){const p=gfxPref();const o=(k,l,d)=>`<button class="opt ${p===k?'on':''}" onclick="gfxSet('${k}')">${l}<small>${d}</small></button>`;
+ return _stP.apply(this,arguments).replace('<div class="card"><h2>Office view</h2>',`<div class="card"><h2>Graphics</h2><div class="grid">${o('auto','✨ Auto','Starts balanced, steps down if frames drop'+(p==='auto'?' · now '+GFX:''))}${o('high','🌟 High','Full shadows. Best on newer devices')}${o('balanced','⚖️ Balanced','Lighter shadows, sharper than low')}${o('low','🔋 Low','No shadows, 30 fps. Smoothest on laptops')}</div></div><div class="card"><h2>Office view</h2>`)}}
+
+/* ===== P36: story keeps pace with history — a chapter that's still open when its era passes wraps up with a partial ending ===== */
+const MISS={
+ gate:()=>[['walt',`You didn't check every box I gave you. Doesn't matter. The doors are open and people know your name.`]],
+ word:()=>[['walt',`Not everybody in town knows you yet. They will. Keep showing up at six a.m.`]],
+ room:()=>[['walt',`Never did get things where you wanted them, huh? Nobody does. Keep building.`]],
+ rival:()=>{const R=stRival();return [['rival',`Supplier of the Year plaque still looks good on our wall, ${fN()}. Maybe next year.`],['me',`Enjoy it while it lasts.`],['walt',`Let them have the plaque. You've got the customers. That lasts longer.`]]},
+ crash:()=>[['linda',`It was ugly, ${fN()}. You're bruised, but the gate's still open, and that's more than most yards in this valley can say.`]],
+ rebuild:()=>[['gus',`Didn't hit every number I hoped for, but you're still on my short list.`]],
+ lumber:()=>[['gus',`Nobody came through that one clean. You're still standing, and that's the score that counts.`]],
+ legacy:()=>[['walt',`You did good, kid. Not perfect. Good.`]]};
+const BRIDGE={crash:()=>[['linda',`${fN()}, I need you in my office. Nothing's wrong. Yet. But I don't like what I'm seeing in the housing numbers.`]],
+ lumber:()=>[['gus',`Forget whatever we were planning. Something strange is happening with lumber. Call me.`]]};
+function stClose(nextIdx){const T=ST(),C=CH[T.ch];if(!C)return;const total=C.objs.length,got=C.objs.filter(objDone).length,fr=got/total;
+ const money=Math.round(C.rw.money*fr*0.6/1000)*1000,rp=Math.round(C.rw.rp*fr*0.6);
+ T.active=false;T.done.push({k:C.k,w:S.week,pick:T.flags[C.k],partial:1,got,total});if(money)earn(money,'oth');if(rp)S.rp+=rp;
+ const nx=nextIdx!=null?nextIdx:T.ch+1;for(let i=T.ch+1;i<nx;i++)if(CH[i]&&!T.done.find(d=>d.k===CH[i].k))T.done.push({k:CH[i].k,w:S.week,skip:1});
+ T.ch=nx;T.next=S.week+(nextIdx!=null?1:4);const N=CH[T.ch];
+ const lines=(MISS[C.k]||MISS.legacy)().concat(N&&BRIDGE[N.k]?BRIDGE[N.k]():[]);
+ news('📖 Chapter closed: '+C.n+' ('+got+'/'+total+' goals)');
+ modal(`📖 Chapter Closed: ${C.n}`,`${scene(lines)}<div class="card small" style="margin:12px 0 0">The story moved on before you finished every goal. You completed <b>${got} of ${total}</b>.${money||rp?`<br>🎁 <b>+${$m(money)}</b> · +${rp} know-how`:''}${N?`<br>📖 Next: <b>${N.n}</b>`:''}</div>`,[{t:'Onward'}])}
+{const _swS2=storyWeek;storyWeek=function(){if(S&&S.founder&&S.week>=14){const T=ST();
+  if(T.active&&!MQ.length&&!(typeof MG!=='undefined'&&MG)){const C=CH[T.ch];
+   if(C&&!C.objs.every(objDone)){let g=null;for(let i=T.ch+1;i<CH.length;i++){if(CH[i].gate){if(CH[i].gate())g=i;break}}
+    if(g!=null){stClose(g);return}
+    if(S.week-T.st>=52*5){stClose(null);return}}}}
+ return _swS2()}}
+// replays of a chapter you didn't finish show how it actually ended
+CH.forEach(C=>{const o=C.outro;C.outro=function(){const d=ST().done.find(x=>x.k===C.k);if(d&&d.skip)return [['walt',`That chapter came and went while you were busy with something else. Happens.`]];if(d&&d.partial)return (MISS[C.k]||MISS.legacy)();return o.apply(this,arguments)}});
+{const _sjS2=storyJournal;storyJournal=function(){let h=_sjS2();const T=ST();CH.forEach((C,i)=>{const d=T.done.find(x=>x.k===C.k);if(d&&(d.partial||d.skip))h=h.replace(`✅ <b>Chapter ${i+1}:`,`${d.skip?'⏭️':'◐'} <b>Chapter ${i+1}:`)});return h}}
+
 if(typeof document!=='undefined'&&document.getElementById('main'))addEventListener('DOMContentLoaded',boot);
 </script>
 

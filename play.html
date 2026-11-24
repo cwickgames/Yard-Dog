@@ -2017,7 +2017,7 @@ function draw3Di(ts){O3.raf=0;if(!S||!O3.active)return;const T=THREE,r=O3.render
  // camera
  O3.yaw+=(O3.tYaw-O3.yaw)*0.12;O3.pitch+=(O3.tPitch-O3.pitch)*0.12;O3.zoom+=(O3.tZoom-O3.zoom)*0.12;
  const cam=O3.camera;cam.aspect=W/H;const vf=cam.fov*Math.PI/180,hf=2*Math.atan(Math.tan(vf/2)*cam.aspect);const XX=O3.X||N;const Rr=Math.hypot(XX,N)*0.56+0.8;const dist=Rr/Math.sin(Math.min(vf,hf)/2)*O3.zoom;
- const cx=XX/2,cz=N/2;cam.position.set(cx+dist*Math.cos(O3.pitch)*Math.cos(O3.yaw),dist*Math.sin(O3.pitch)+0.6,cz+dist*Math.cos(O3.pitch)*Math.sin(O3.yaw));cam.lookAt(cx,0.9,cz);cam.updateProjectionMatrix();
+ const cx=XX/2,cz=N/2;cam.position.set(cx+dist*Math.cos(O3.pitch)*Math.cos(O3.yaw),dist*Math.sin(O3.pitch)+0.6,cz+dist*Math.cos(O3.pitch)*Math.sin(O3.yaw));cam.far=Math.max(200,dist+Rr*3+20);cam.near=Math.max(0.1,dist*0.01);cam.lookAt(cx,0.9,cz);cam.updateProjectionMatrix();
  r.render(O3.scene,cam);O3.raf=requestAnimationFrame(draw3D)}
 function p3down(e){O3.ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});O3.drag={x:e.clientX,y:e.clientY,moved:false,yaw:O3.tYaw,pitch:O3.tPitch,zoom:O3.tZoom,d:pinchD()};try{e.target.setPointerCapture(e.pointerId)}catch(_){}}
 function pinchD(){const p=[...O3.ptrs.values()];return p.length>=2?Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y):0}
@@ -2094,7 +2094,7 @@ function estValue(r){return r.u*unitPrice(r.line)/(1-LN(r.line).m)}
 function rfqCard(r){const T=CT[r.type],L=LN(r.line),A=acct(r.acct)||{name:r.an||'?',rel:0};const left=r.close-S.week;const st=S.inv[r.line].u;
  return `<div class="proj" style="cursor:default"><div class="between"><b>${T.ic} ${esc(r.title)}</b><span class="small ${left<=1?'warn':'mut'}">closes in ${Math.max(0,left)}w</span></div>
  <div class="small mut">${esc(A.name)} · ${T.n} · relationship ${Math.round(A.rel)}</div>
- ${r.brand!=null?`<div class="small" style="margin-top:3px">🏷️ Spec: <b>${esc(BRANDS[r.line][r.brand][0])}</b>${r.brand===brandIdx(r.line)?' <span class="good">✓ you stock it</span>':` <span class="warn">(you carry ${esc(brandOf(r.line)[0])})</span>`}</div>`:''}<div class="small" style="margin-top:3px">${L.ic} ${L.n}${r.style&&isSpecialty(r.line,r.style)?' · <span class="tag">⭐ specialty</span>':''}${S.trend&&S.trend.k===r.line&&S.week<S.trend.until?' · <span class="tag">🔥 trending</span>':''} · ${SIZES[sIdx(r.size)].n} · <b>${r.u} units</b> · ~${$m(estValue(r))} · deliver within ${r.due}w · ${r.rivals} rival${r.rivals>1?'s':''}</div>
+ ${r.brand!=null?`<div class="small" style="margin-top:3px">🏷️ Spec: <b>${esc(BRANDS[r.line][r.brand][0])}</b>${r.brand===brandIdx(r.line)?' <span class="good">✓ you stock it</span>':` <span class="warn">(you carry ${esc(brandOf(r.line)[0])})</span>`}</div>`:''}<div class="small" style="margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">${prodArt(L.k,24)} ${L.n}${r.style&&isSpecialty(r.line,r.style)?' · <span class="tag">⭐ specialty</span>':''}${S.trend&&S.trend.k===r.line&&S.week<S.trend.until?' · <span class="tag">🔥 trending</span>':''} · ${SIZES[sIdx(r.size)].n} · <b>${r.u} units</b> · ~${$m(estValue(r))} · deliver within ${r.due}w · ${r.rivals} rival${r.rivals>1?'s':''}</div>
  <div class="between" style="margin-top:6px"><span class="small ${st>=r.u?'good':'warn'}">In stock: ${fmt(st)}/${r.u}</span>${inBid(r.id)?'<span class="tag">📝 Bidding…</span>':`<button class="btn sm" ${S.bids.length>=bidCap()?'disabled':''} onclick="newDraft(${r.id})">Bid it</button>`}</div></div>`}
 function createHtml(){if(S.draft&&!rfqOf(S.draft))S.draft=null;if(S.draft)return wizardHtml();
  const recent=S.jobs.slice(-6).reverse();const cap=bidCap();
@@ -2112,7 +2112,7 @@ function wizardHtml(){const d=S.draft;return `<div class="steps">${STEPS.map((s,
 function prioCard(t){const T=CT[t];const n=knowW(t);return `<div class="card small"><b>What ${T.n.toLowerCase()} customers care about</b><div class="row" style="margin-top:6px">${CRIT.map(([k,nm,ic])=>`<span class="tag">${ic} ${nm} <b class="${wSym(t,k)==='?'?'mut':'good'}">${wSym(t,k)}</b></span>`).join('')}</div>${n<5?`<p class="mut" style="margin:6px 0 0">Bid more ${T.n.toLowerCase()} jobs to learn the rest${has('o_analytics')?'':', or unlock Win/Loss Analytics'}.</p>`:''}</div>`}
 function stepJob(d){const r=rfqOf(d);const T=CT[r.type],L=LN(r.line),A=acct(r.acct)||{name:r.an||'?',rel:0};const wk=prepWeeks(d);const tm=teamFor(d);const left=r.close-S.week;
  return `<div class="card"><h2 style="margin-bottom:4px">${T.ic} ${esc(r.title)}</h2><div class="small mut">${esc(A.name)} · ${T.n} · relationship <b>${Math.round(A.rel)}</b></div>
- <div class="small" style="margin-top:6px">${L.ic} ${L.n} · ${SIZES[sIdx(r.size)].n} · <b>${r.u} units</b> · must deliver within <b>${r.due} weeks</b> of award · ${r.rivals} rival bid${r.rivals>1?'s':''}</div></div>
+ <div class="small" style="margin-top:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">${prodArt(L.k,28)} ${L.n} · ${SIZES[sIdx(r.size)].n} · <b>${r.u} units</b> · must deliver within <b>${r.due} weeks</b> of award · ${r.rivals} rival bid${r.rivals>1?'s':''}</div></div>
  ${prioCard(r.type)}
  <div class="card"><h3>Who works the takeoff</h3><p class="mut small" style="margin-top:-2px">More people finish the takeoff faster and more thoroughly. They leave their usual jobs (counter, trucks) while bidding.</p>
  <div class="grid">${S.staff.filter(s=>!s.vac).map(s=>`<button class="opt ${d.team.includes(s.id)?'on':''}" ${onBidTask(s)?'disabled':''} onclick="toggleTeam(${s.id})">${avatar(s.av,34)}<br>${esc(s.name.split(' ')[0])}<small>${taskLabel(s)}</small></button>`).join('')}</div>
@@ -2153,7 +2153,7 @@ function stockHtml(){const used=invUnits(),cap=yardCap();const watch=S.staff.som
  <div class="card"><h2>📈 Commodity prices</h2>${Object.keys(COM).map(k=>`<div class="between small" style="padding:4px 0"><span>${COM[k].ic} ${COM[k].n}</span><span>×${S.com[k].toFixed(2)} · 4 wk ${arrow(comTrend(k))}${watch?` · <span class="mut">6 mo outlook</span> ${arrow(comForecast(k))}`:''}</span></div>`).join('')}<p class="mut small" style="margin-bottom:0">Buy when prices are low. Stock you already own keeps its cost while selling at today's price.${watch?'':' A Market Watcher on staff can see where prices are heading.'}</p></div>
  <div class="seg">${[['all','All'],['fence','🏡 Fence'],['deck','🪵 Deck'],['low','⚠️ Low']].map(([k,n])=>`<button class="${(S.stockF||'all')===k?'on':''}" onclick="S.stockF='${k}';render()">${n}</button>`).join('')}</div>
  ${S.lines.filter(k=>{const f=S.stockF||'all';const L=LN(k);return f==='all'||(f==='low'?S.inv[k].u<(S.tgt[k]||0)*0.5:(L.side===f||L.side==='both'))}).map(k=>{const L=LN(k),I=S.inv[k],up=unitPrice(k);const tg=S.tgt[k]||0;const w=W[k]||{s:0,m:0};const vol=volMult(k);
-  return `<div class="proj" style="cursor:default"><div class="between"><b>${L.ic} ${L.n}</b><span class="small">${fmt(I.u)} units · ${$m(I.u*I.c)}${(()=>{const h=S.bids.filter(B=>B.hold&&rfqOf(B.d).line===k).reduce((a,B)=>a+B.hold,0);return h?` <span class="mut">(+${fmt(h)} held for bids)</span>`:''})()}</span></div>
+  return `<div class="proj" style="cursor:default"><div class="between"><b style="display:flex;align-items:center;gap:8px">${prodArt(L.k,38)} ${L.n}</b><span class="small">${fmt(I.u)} units · ${$m(I.u*I.c)}${(()=>{const h=S.bids.filter(B=>B.hold&&rfqOf(B.d).line===k).reduce((a,B)=>a+B.hold,0);return h?` <span class="mut">(+${fmt(h)} held for bids)</span>`:''})()}</span></div>
   <div class="bar" style="margin:6px 0"><i style="width:${tg?Math.min(100,I.u/tg*100):0}%;${I.u<tg*0.3?'background:var(--bad)':''}"></i></div>
   <div class="between small"><span class="mut">Your cost ${$m(I.c)}/u · market ${$m(up)}/u ${I.u&&up>I.c*1.03?'<span class="good">(cheap stock!)</span>':I.u&&up<I.c*0.97?'<span class="bad">(paid too much)</span>':''}</span><span class="mut">Last wk: sold ${fmt(w.s)}${w.m>0.5?`, <span class="warn">missed ${fmt(w.m)}</span>`:''}</span></div>
   <div class="small" style="margin-top:6px">🏷️ Brand: ${BRANDS[k].map((b,i)=>`<button class="btn ${brandIdx(k)===i?'':'sec'} sm" style="margin:2px" onclick="setBrand('${k}',${i})">${esc(b[0])} <span style="opacity:.7">${TIER[b[1]][0]}</span></button>`).join('')}</div><div class="between small" style="margin-top:4px"><span class="mut">${S.dealer&&S.dealer[k]?'🤝 Stocking dealer: 4% off buys, +5% counter traffic':'Become a stocking dealer for 4% off buys and co-op marketing'}</span>${S.dealer&&S.dealer[k]?'':`<button class="btn sec sm" ${S.money>=dealerCost(k)?'':'disabled'} onclick="becomeDealer('${k}')">Sign up · ${$m(dealerCost(k))}</button>`}</div><div class="small mut" style="margin-top:4px">Styles: ${stylesOf(k).map(s=>esc(s[0])+(s[1]?' ⭐':'')).join(' · ')}</div><div class="between small" style="margin-top:4px"><span>${S.trend&&S.trend.k===k&&S.week<S.trend.until?'🔥 <b>'+esc(S.trend.st)+'</b> is trending':''}</span><button class="btn ${S.spec&&S.spec[k]?'good':'sec'} sm" onclick="toggleSpec('${k}')">⭐ Specialty styles: ${S.spec&&S.spec[k]?'stocked':'off'}</button></div><div class="row small" style="margin-top:6px">${[10,25,50].concat(has('y_mill')?[100]:[]).map(n=>`<button class="btn sec sm" ${S.money>=buyPrice(k,n)?'':'disabled'} onclick="buyStock('${k}',${n})">+${n} · ${$m(buyPrice(k,n))}</button>`).join('')}</div>
@@ -2187,7 +2187,7 @@ function insightsHtml(){const ks=Object.keys(S.know);
   <h3>Extras that land</h3><div>${fit}</div>
   <h3>Lines they buy</h3><div class="small">${T.lines.map(l=>LN(l).ic+' '+LN(l).n).join(' · ')}</div>
   ${jobs.length?`<h3>Average winning margin</h3><div class="small">${jobs.filter(j=>j.won).length?pct(jobs.filter(j=>j.won).reduce((a,j)=>a+j.m,0)/jobs.filter(j=>j.won).length):'No wins yet'}</div>`:''}</div>`}).join(''):'<div class="card"><p class="mut">Bid on jobs to start filling this in.</p></div>')+
- `<div class="card"><h2>📦 Product lines</h2>${LINES.map(L=>`<div style="padding:6px 0;border-bottom:1px solid var(--line);${S.lines.includes(L.k)?'':'opacity:.5'}"><div class="between small"><span><b>${L.ic} ${L.n}</b> <span class="mut">${COM[L.com].n}</span></span><span>margin ${pct(L.m)} · demand ×${(L.mk(yearOf(S.week))).toFixed(2)}</span></div><div class="small">🏷️ ${BRANDS[L.k].map(b=>esc(b[0])+' <span class="mut">('+TIER[b[1]][0]+')</span>').join(' · ')}</div><div class="small mut">${L.st.map(s=>esc(s[0])+(s[1]?' ⭐':'')+(s[2]&&yearOf(S.week)<s[2]?' ('+s[2]+')':'')).join(' · ')}</div></div>`).join('')}</div>`}
+ `<div class="card"><h2>📦 Product lines</h2>${LINES.map(L=>`<div style="padding:6px 0;border-bottom:1px solid var(--line);${S.lines.includes(L.k)?'':'opacity:.5'}"><div class="between small"><span style="display:inline-flex;align-items:center;gap:6px">${prodArt(L.k,24)}<b>${L.n}</b> <span class="mut">${COM[L.com].n}</span></span><span>margin ${pct(L.m)} · demand ×${(L.mk(yearOf(S.week))).toFixed(2)}</span></div><div class="small">🏷️ ${BRANDS[L.k].map(b=>esc(b[0])+' <span class="mut">('+TIER[b[1]][0]+')</span>').join(' · ')}</div><div class="small mut">${L.st.map(s=>esc(s[0])+(s[1]?' ⭐':'')+(s[2]&&yearOf(S.week)<s[2]?' ('+s[2]+')':'')).join(' · ')}</div></div>`).join('')}</div>`}
 
 /* ================= BUSINESS ================= */
 function bizTab(t){S.bopen=S.bopen||{};S.bopen[t]=true;go('business')}
@@ -2427,8 +2427,8 @@ GAMES.rush={start(M){const ks=S.lines.filter(k=>k!=='hw').sort((a,b)=>(S.inv[b]?
  item(k){const M=MG;if(!M||M.done)return;let c=M.cust[M.sel];if(!c){M.sel=M.cust.findIndex(x=>x);c=M.cust[M.sel];if(!c)return}
   if(c.it.includes(k)&&!c.got.includes(k)){c.got.push(k);mgSfx('tap');if(c.got.length===c.it.length){M.served++;M.cust[M.sel]=null;mgSfx('coin');const nx=M.cust.findIndex(x=>x);if(nx>=0)M.sel=nx}}else{c.p-=2;mgSfx('deny')}this.draw(M)},
  finish(M){const s=M.served,l=M.lost;mgEnd(s/(s+l+0.5)*Math.min(1,s/9),`You served <b>${s}</b> customer${s===1?'':'s'}${l?` and ${l} walked out`:' and nobody walked out'}.`)},
- draw(M){document.getElementById('mgA').innerHTML=`<div class="rushq">${M.cust.map((c,i)=>c?`<div class="rc ${M.sel===i?'on':''}" onpointerdown="GAMES.rush.pickC(${i})">${avatar(c.av,40)}<div class="small"><b>${esc(c.nm)}</b></div><div class="rit">${c.it.map(k=>`<span class="${c.got.includes(k)?'got':''}">${LN(k).ic}</span>`).join('')}</div><div class="rbar"><i id="rp${i}" style="width:${c.p/c.p0*100}%"></i></div></div>`:`<div class="rc empty">…</div>`).join('')}</div>
-  <div class="rshelf">${M.shelf.map(k=>`<button onpointerdown="GAMES.rush.item('${k}')"><span>${LN(k).ic}</span>${SHORTN[k]||esc(LN(k).n)}</button>`).join('')}</div><div class="between small" style="margin-top:6px"><span>✅ Served <b>${M.served}</b></span><span>🚪 Walked out <b>${M.lost}</b></span></div>`;
+ draw(M){document.getElementById('mgA').innerHTML=`<div class="rushq">${M.cust.map((c,i)=>c?`<div class="rc ${M.sel===i?'on':''}" onpointerdown="GAMES.rush.pickC(${i})">${avatar(c.av,40)}<div class="small"><b>${esc(c.nm)}</b></div><div class="rit">${c.it.map(k=>`<span class="${c.got.includes(k)?'got':''}">${prodArt(k,30)}</span>`).join('')}</div><div class="rbar"><i id="rp${i}" style="width:${c.p/c.p0*100}%"></i></div></div>`:`<div class="rc empty">…</div>`).join('')}</div>
+  <div class="rshelf">${M.shelf.map(k=>`<button onpointerdown="GAMES.rush.item('${k}')"><span>${prodArt(k,40)}</span>${SHORTN[k]||esc(LN(k).n)}</button>`).join('')}</div><div class="between small" style="margin-top:6px"><span>✅ Served <b>${M.served}</b></span><span>🚪 Walked out <b>${M.lost}</b></span></div>`;
   document.getElementById('mgF').innerHTML=''}};
 
 /* ---------- 4. Haggle ---------- */
@@ -2748,14 +2748,14 @@ const _fyBZ=fyClose;fyClose=function(y){const t=rebPay(y);if(t)news(t);_fyBZ(y);
 /* ---------- mini-games: Inventory Count + Returns Desk ---------- */
 MGDEF.count={ic:'📋',n:'Inventory Count',hint:'Count how many of the highlighted item are in the bin, set your count with − and +, and submit. Four bins, and they get busier.',why:'Year-end shrink write-off'};
 MGDEF.returns={ic:'↩️',n:'Returns Desk',hint:'Sort each returned item: clean and unopened goes back on the shelf, broken gets scrapped, mill defects go back to the vendor, and special orders or stuff we never sold get refused.',why:'Value you recover from returns'};
-const CNTI=['🪵','🔩','🪨','🌀','📏','🧱','🚪','🪧','⚙️','🔧'];
+const CNTI=['hw','concrete','pipe','chain','wood','vinyl','lighting','slats','gate','bollard','sheath','roofing'];
 GAMES.count={start(M){M.r=0;M.acc=[];M.dur=50;this.next(M)},
  next(M){if(M.r>=4){this.finish(M);return}const n=12+M.r*6;M.t0=M.t;M.tgt=pick(CNTI);M.items=[];const tn=ri(3,6+M.r*2);for(let i=0;i<n;i++)M.items.push(i<tn?M.tgt:pick(CNTI.filter(x=>x!==M.tgt)));M.items.sort(()=>Math.random()-0.5);M.ans=tn;M.guess=0;this.draw(M)},
  frame(M){mgTime(M.dur-M.t)},
  adj(d){const M=MG;if(!M||M.done)return;M.guess=Math.max(0,M.guess+d);const e=document.getElementById('cg');if(e)e.textContent=M.guess},
  submit(){const M=MG;if(!M||M.done)return;const err=Math.abs(M.guess-M.ans);M.acc.push(err===0?1:err===1?0.6:err===2?0.25:0);mgSfx(err===0?'good':'deny');M.r++;this.next(M)},
  finish(M){if(M.done)return;const s=M.acc.reduce((a,b)=>a+b,0)/4;mgEnd(s,`You counted ${M.acc.filter(a=>a===1).length} of 4 bins exactly right.`)},
- draw(M){document.getElementById('mgA').innerHTML=`<div class="between small"><span>Bin ${M.r+1} of 4</span><span>Count all the <b style="font-size:22px">${M.tgt}</b></span></div><div class="cbin">${M.items.map(i=>`<span style="transform:rotate(${ri(-25,25)}deg)">${i}</span>`).join('')}</div>
+ draw(M){document.getElementById('mgA').innerHTML=`<div class="between small"><span>Bin ${M.r+1} of 4</span><span style="display:flex;align-items:center;gap:6px">Count all the ${prodArt(M.tgt,34)} <b>${esc(SHORTN[M.tgt]||LN(M.tgt).n)}</b></span></div><div class="cbin">${M.items.map(i=>`<span style="transform:rotate(${ri(-25,25)}deg);display:inline-block;margin:3px">${prodArt(i,40)}</span>`).join('')}</div>
   <div class="cstep"><button class="btn sec" onpointerdown="GAMES.count.adj(-1)">−</button><b id="cg">${M.guess}</b><button class="btn sec" onpointerdown="GAMES.count.adj(1)">+</button></div>`;
   document.getElementById('mgF').innerHTML=`<button class="btn" onclick="GAMES.count.submit()">✅ Submit count</button>`}};
 const RITEMS=[['Unopened box of gate hinges','ok','✨ clean, unopened'],['Bundle of cedar pickets','ok','✨ clean, still banded'],['Roll of chain link','ok','✨ never unrolled'],['Bag of post mix','ok','✨ dry, sealed'],['Composite deck board','ok','✨ no scratches'],
@@ -2850,10 +2850,12 @@ function corpInit(){if(S.corp)return S.corp;const f=S.founder;let hi=METROS.find
  S.corp={home:hi,homeReg:METROS[hi][2],br:[],rms:{},dirs:{},inbox:[],log:[],tab:'overview',sel:null,lim:{bm:{credit:25e3,order:100e3,po:50e3},rm:{credit:100e3,order:500e3,po:250e3},dir:{credit:500e3,order:2.5e6,po:1e6}},title:0};return S.corp}
 const AREA={credit:{n:'Credit',ic:'💳',dir:'fin',dn:'Director of Finance'},order:{n:'Orders & bids',ic:'📝',dir:'sales',dn:'Director of Sales'},po:{n:'Purchase orders',ic:'🧾',dir:'ops',dn:'Director of Operations'}};
 const TITLES=['Owner','President','CEO','Chairman & CEO'];
+function TT(t){return t>=2&&typeof ceoUnlocked==='function'&&!ceoUnlocked()?'President':TITLES[t]}
 function titleIx(){const C=S.corp;if(!C)return 0;const n=C.br.length;return n>=12?3:n>=3?2:n>=1?1:0}
-function titleCheck(){const C=S.corp;const t=titleIx();if(t<=(C.title||0))return;C.title=t;const me=S.staff.find(s=>s.founder);const a=ARCH.find(x=>x.k===S.founder.arch);if(me)me.role=TITLES[t]+' (Founder)';
+function titleCheck(){const C=S.corp;const t=titleIx();if(t<=(C.title||0))return;C.title=t;const me=S.staff.find(s=>s.founder);const a=ARCH.find(x=>x.k===S.founder.arch);if(me)me.role=TT(t)+' (Founder)';
  const msg=['','You\'re running more than one yard now. Your business cards say <b>President</b>.','With branches across the map and managers under you, the board makes it official: you\'re the <b>CEO</b>.','A dozen branches and counting. You\'re now <b>Chairman & CEO</b> of '+esc(S.founder.studio)+'.'][t];
- news('🎩 '+S.founder.name+' is now '+TITLES[t]+' of '+S.founder.studio+'.');modal('🎩 New Title: '+TITLES[t],`<div style="text-align:center">${avatar(me.av,90)}</div><p>${msg}</p><p class="mut small">Your branch managers, regional managers and directors handle approvals inside their limits. Anything bigger lands on your desk.</p>`,[{t:'Get to work',c:'good'}])}
+ const lockMsg=TT(t)!==TITLES[t]?(t===2?'Branches across the map, managers under you. You\'re running a real company now. The corner office and the CEO chair come with <b>CEO mode</b>.':'A dozen branches and counting. The board wants you in the CEO chair; <b>CEO mode</b> puts you there.'):null;
+ news('🎩 '+S.founder.name+' is now '+TT(t)+' of '+S.founder.studio+'.');modal(lockMsg?'🎩 Growing up':'🎩 New Title: '+TITLES[t],`<div style="text-align:center">${avatar(me.av,90)}</div><p>${lockMsg||msg}</p><p class="mut small">Your branch managers, regional managers and directors handle approvals inside their limits. Anything bigger lands on your desk.</p>`,[{t:'Get to work',c:'good'}])}
 /* ---------- weekly sim ---------- */
 function rSea(reg,w){const a=CREG[reg].sea;return Math.max(0.15,1+(season(w)-1)*a)}
 function corpWeek(){const C=S.corp;if(!C||!C.br.length&&!Object.keys(C.dirs).length)return;let pay_=0;
@@ -2890,7 +2892,7 @@ function settle(q,yes){const B=S.corp.br.find(b=>b.id===q.b);let v=0;const I=q.i
  else if(q.good&&B)B.share=Math.max(0.005,B.share-0.002);v=Math.round(v);if(v>0)earn(v,'oth');else if(v<0)spend(-v);q.v=v;q.yes=yes}
 function corpLog(q,lv,yes,who){const C=S.corp;C.log.unshift({w:S.week,a:q.a,amt:q.amt,lv,yes,who,v:q.v||0,b:q.b,cust:q.cust});if(C.log.length>40)C.log.pop()}
 function askCEO(q){const C=S.corp,B=C.br.find(b=>b.id===q.b);if(!B){C.inbox=C.inbox.filter(x=>x!==q);return}const M=MT(B.m);const A=AREA[q.a];const top=chainOf(B,q.a).slice(-1)[0];const rec=top?(Math.random()<clamp(0.5+top[1].judg/400,0.5,0.95)?q.good:!q.good):null;
- modal(`${A.ic} Needs CEO approval`,`<p class="small mut">${esc(M.n)} branch · ${A.n}</p><p>${reqText(q)}</p><div class="card small" style="margin:8px 0">${q.path.length?q.path.map(t=>'⬆️ '+esc(t)).join('<br>')+'<br>':''}🎩 <b>Above every limit: your call.</b>${top?`<br>💬 ${esc(top[1].name.split(' ')[0])} recommends: <b>${rec?'approve':'deny'}</b>`:''}</div>`,[
+ modal(`${A.ic} ${S.ceo?'Needs CEO approval':'Needs your approval'}`,`<p class="small mut">${esc(M.n)} branch · ${A.n}</p><p>${reqText(q)}</p><div class="card small" style="margin:8px 0">${q.path.length?q.path.map(t=>'⬆️ '+esc(t)).join('<br>')+'<br>':''}🎩 <b>Above every limit: your call.</b>${top?`<br>💬 ${esc(top[1].name.split(' ')[0])} recommends: <b>${rec?'approve':'deny'}</b>`:''}</div>`,[
   {t:'Approve',c:'good',f:()=>{C.inbox=C.inbox.filter(x=>x!==q);settle(q,true);corpLog(q,'ceo',true,'You');news(`🎩 You approved ${A.n.toLowerCase()} of ${$m(q.amt)} (${M.n}).`)}},
   {t:'Deny',c:'bad',f:()=>{C.inbox=C.inbox.filter(x=>x!==q);settle(q,false);corpLog(q,'ceo',false,'You')}},
   {t:'Decide later',c:'sec'}])}
@@ -2926,7 +2928,7 @@ function corpHtml(){if(!has('b_branch'))return `<div class="card"><h2>🗺️ Ex
  const tabs=`<div class="ctabs">${corpTabs.map(([k,n])=>`<button class="${C.tab===k?'on':''}" onclick="S.corp.tab='${k}';render();scrollTop0()">${n}${k==='approvals'&&C.inbox.length?` <i>${C.inbox.length}</i>`:''}</button>`).join('')}</div>`;
  return tabs+({overview:coOverview,map:coMap,branches:coBranches,approvals:coApprovals,policy:coPolicy}[C.tab]||coOverview)()}
 function coStats(){const C=S.corp;const r13=C.br.reduce((a,B)=>a+(B.r13||[]).reduce((x,y)=>x+y,0),0);const rev=C.br.reduce((a,B)=>a+(B.wk?B.wk.rev:0),0)*52;const hc=S.staff.length+C.br.reduce((a,B)=>a+B.team+(B.mgr?1:0),0)+Object.values(C.rms).length+Object.values(C.dirs).length;const regs=new Set([C.homeReg,...C.br.map(B=>MT(B.m).reg)]);return {r13,rev,hc,regs:regs.size}}
-function coOverview(){const C=S.corp,me=S.staff.find(s=>s.founder),st=coStats();const t=TITLES[titleIx()];
+function coOverview(){const C=S.corp,me=S.staff.find(s=>s.founder),st=coStats();const t=TT(titleIx());
  const dirSeat=a=>{const A=AREA[a],d=C.dirs[A.dir];if(d)return pCard(d,null,`<div class="small mut">${A.dn} · approves ${A.n.toLowerCase()} up to ${$m(C.lim.dir[a])}</div>`);const c=C.dcand&&C.dcand[a];const ok=C.br.length>=3;
   return `<div class="pcard vac"><span class="big">${A.ic}</span><div style="flex:1"><b>${A.dn}</b><div class="mut small">${ok?'Vacant. Approves '+A.n.toLowerCase()+' above regional limits.':'Opens once you have 3 branches.'}</div>${c?pCard(c,'dir',`<button class="btn sm" style="margin-top:4px" ${S.money>=c.sal*3?'':'disabled'} onclick="hireDir('${a}')">Hire · ${$m(c.sal)}/mo</button> <button class="btn sec sm" onclick="dirCands('${a}')">Someone else</button>`):ok?`<button class="btn sm" onclick="dirCands('${a}')">Find a candidate</button>`:''}</div></div>`};
  const regs=[...new Set(C.br.map(B=>MT(B.m).reg))];
@@ -2978,7 +2980,7 @@ function coBranches(){const C=S.corp;const hq=S.led[fyOf(S.week)]||{rev:0,cogs:0
     ${B.mgr?pCard(B.mgr,'bm',`<div class="mut small">Morale ${Math.round(B.mgr.mor)}</div>`):`<p class="bad small"><b>No branch manager.</b> Sales are sliding.</p>`}
     ${c?pCard(c,'bm',`<button class="btn sm" style="margin-top:4px" onclick="hireBM(${B.id})">Hire · ${$m(c.sal)}/mo</button>`):''}
     <div class="row" style="margin-top:8px;gap:6px"><button class="btn sec sm" onclick="newBM(${B.id})">${B.mgr?'Replace manager':'Find a manager'}</button>${nx?`<button class="btn sec sm" ${S.money>=facCost(nx,B.m)-facCost(B.fac,B.m)*0.5?'':'disabled'} onclick="growBr(${B.id})">Upgrade to ${CFAC[nx].n.toLowerCase()} · ${$m(facCost(nx,B.m)-facCost(B.fac,B.m)*0.5)}</button>`:''}<button class="btn sec sm" onclick="closeBr(${B.id})">Close</button></div><div class="row small" style="margin-top:6px;gap:4px">Staffing: ${Object.keys(PLANS).map(k=>`<button class="btn ${(B.plan||'std')===k?'':'sec'} sm" onclick="setPlan(${B.id},'${k}')">${PLANS[k].ic} ${PLANS[k].n}</button>`).join('')}</div></div>`}).join(''):`<div class="card"><p class="mut">No branches yet. Pick a market on the 🗺️ Expand tab.</p></div>`)}
-function coApprovals(){const C=S.corp;const LVN={bm:'Branch Mgr',rm:'Regional Mgr',dir:'Director',ceo:'You (CEO)'};
+function coApprovals(){const C=S.corp;const LVN={bm:'Branch Mgr',rm:'Regional Mgr',dir:'Director',ceo:S.ceo?'You (CEO)':'You'};
  return `<div class="card"><h2>🎩 Your desk</h2>${C.inbox.length?C.inbox.map((q,k)=>{const B=C.br.find(b=>b.id===q.b);return `<div class="between small crow"><span style="flex:1;min-width:0">${AREA[q.a].ic} <b>${$m(q.amt)}</b> ${AREA[q.a].n.toLowerCase()} · ${esc(B?MT(B.m).n:'')}<br><span class="mut">${esc(q.cust)} · waiting ${S.week-q.w} wk (expires at 4)</span></span><button class="btn sm" onclick="askCEO(S.corp.inbox[${k}])">Review</button></div>`}).join(''):'<p class="mut small">Nothing needs you right now. Your managers handled everything within their limits.</p>'}</div>
   <div class="card"><h2>Recent decisions</h2>${C.log.length?C.log.slice(0,20).map(l=>{const B=C.br.find(b=>b.id===l.b);return `<div class="between small crow"><span style="flex:1;min-width:0">${AREA[l.a].ic} ${$m(l.amt)} · ${esc(B?MT(B.m).n:l.b==null?'Manufacturing':'closed branch')}<br><span class="mut">${LVN[l.lv]}: ${esc(l.who)} · ${dateStr(l.w)}</span></span><span style="flex:0 0 auto;text-align:right;padding-left:8px">${l.yes?'✅ Approved':'⛔ Denied'}<br><span class="${l.v>0?'good':l.v<0?'bad':'mut'}">${l.v?(l.v>0?'+':'')+$m(l.v):'—'}</span></span></div>`}).join(''):'<p class="mut small">No decisions yet.</p>'}</div>`}
 function coPolicy(){const C=S.corp;const sel=(lv,a)=>`<select onchange="setLim('${lv}','${a}',this.value)">${LIMOPT.map(v=>`<option value="${v}" ${C.lim[lv][a]===v?'selected':''}>${$m(v)}</option>`).join('')}</select>`;
@@ -2987,7 +2989,7 @@ function coPolicy(){const C=S.corp;const sel=(lv,a)=>`<select onchange="setLim('
   <p class="mut small">Raise limits and fewer decisions reach you, but your managers' judgment matters more. Above the Director limit, it's always your call.</p></div>
   <div class="card small"><b>Who covers what</b><br>💳 Credit: customer credit lines and credits → <b>Director of Finance</b><br>📝 Orders & bids: big jobs and quotes → <b>Director of Sales</b><br>🧾 Purchase orders: stock buys and booking programs → <b>Director of Operations</b></div>`}
 PANELS.corp=['🗺️','Company',()=>corpHtml()];
-const _hubCORP=hubHtml;hubHtml=function(){const C=S.corp;const h=_hubCORP();return (C&&C.inbox.length?`<div class="card trend" onclick="askCEO(S.corp.inbox[0])" style="cursor:pointer">🎩 <b>${C.inbox.length} decision${C.inbox.length>1?'s':''}</b> from your branches need${C.inbox.length>1?'':'s'} CEO approval. <u>Review</u></div>`:'')+h};
+const _hubCORP=hubHtml;hubHtml=function(){const C=S.corp;const h=_hubCORP();return (C&&C.inbox.length?`<div class="card trend" onclick="askCEO(S.corp.inbox[0])" style="cursor:pointer">🎩 <b>${C.inbox.length} decision${C.inbox.length>1?'s':''}</b> from your branches need${C.inbox.length>1?'':'s'} ${S.ceo?'CEO':'your'} approval. <u>Review</u></div>`:'')+h};
 
 /* ================= MANUFACTURING ================= */
 RES.push({k:'b_plant',t:'Business',n:'Manufacturing Division',rp:150,c:1.5e6,req:['b_branch'],from:2002});
@@ -3743,9 +3745,9 @@ function moveDo(succOnly){const C=S.corp,V=C.move;let s=null;if(V.who&&String(V.
   modal('🏛️ Welcome to corporate',`<div style="text-align:center">${avatar(f.av,80)}</div><p>You've handed the keys to <b>${esc(s.name)}</b> and moved into the new headquarters in <b>${esc(MT(pk).n)}</b>.</p><p>From here on, the branches run themselves through their managers. You'll see weekly results, but bids, buying and day-to-day calls go through branch and regional managers. Only decisions above everyone's limits land on your desk.</p>`,[{t:'Take the corner office',c:'good'}])}
  else news('🧭 '+s.name+' is the new manager in '+MT(C.home).n+'.');
  V.step=1;V.ext=null;C.tab='overview';save();go('menu')}
-const _tcCEO=titleCheck;titleCheck=function(){_tcCEO();const C=S.corp;if(C&&C.title>=2&&!C.hq&&!C.moveAsk){C.moveAsk=S.week;modal('🏛️ Time to move to corporate',`<p>With three branches you're a real company now, and a CEO can't spend the week behind the counter. Pick someone to run your home yard and choose where corporate headquarters goes.</p>`,[{t:'Plan the move',c:'good',f:()=>{S.corp.tab='move';go('corp')}},{t:'Not yet',c:'sec'}])}};
+const _tcCEO=titleCheck;titleCheck=function(){_tcCEO();const C=S.corp;if(C&&C.title>=2&&!C.hq&&!C.moveAsk){C.moveAsk=S.week;if(typeof ceoUnlocked==='function'&&!ceoUnlocked()){C.moveLock=1;modal('🏛️ Ready for corporate?',`<p>Three branches and growing. The next step is a corporate headquarters: you leave the counter, put a manager in your home yard and run the whole company from the top.</p><p class="small mut">That's <b>CEO mode</b>, available in the Shop. Your branches keep running either way.</p>`,[{t:'See CEO mode',c:'good',f:()=>{try{shopGo()}catch(e){shopOpen()}}},{t:'Not now',c:'sec'}]);return}C.moveLock=0;modal('🏛️ Time to move to corporate',`<p>With three branches you're a real company now, and a CEO can't spend the week behind the counter. Pick someone to run your home yard and choose where corporate headquarters goes.</p>`,[{t:'Plan the move',c:'good',f:()=>{S.corp.tab='move';go('corp')}},{t:'Not yet',c:'sec'}])}};
 const _cwCEO=corpWeek;corpWeek=function(){_cwCEO();const C=S.corp;if(!C)return;
- if(C.title>=2&&!C.hq&&C.moveAsk&&S.week-C.moveAsk>=8){C.moveAsk=null;titleCheck()}
+ if(C.title>=2&&!C.hq&&C.moveAsk&&S.week-C.moveAsk>=(C.moveLock&&!ceoUnlocked()?52:8)){C.moveAsk=null;titleCheck()}
  if(C.hq){spend(C.hq.cost/52);if(!S.staff.find(s=>s.id===C.homeMgr&&s.mgr)&&!MQ.length&&S.week>=(C.mgrAsk||0)){C.mgrAsk=S.week+4;C.move={step:1};modal('🧭 '+MT(C.home).n+' needs a manager',`<p>Your home branch has no manager. Pick someone to take over.</p>`,[{t:'Choose',c:'good',f:()=>{S.corp.tab='move';go('corp')}},{t:'Later',c:'sec'}])}}};
 const _gmCEO=genMgr;genMgr=function(lv){const p=_gmCEO(lv);const C=S.corp;if(C&&C.hq&&(lv==='dir'||lv==='rm')){const b=C.hq.talent;CATS.forEach(c=>p.sk[c.k]=Math.min(220,p.sk[c.k]+Math.round(b*0.7)));p.lead+=Math.round(b*0.6);p.judg+=Math.round(b*0.6)}return p};
 const _dcCEO=decide;decide=function(q,lv,p){const C=S.corp,ov=C&&C.hq?C.hq.ov:0;const j=p.judg;p.judg=(j||100)+ov;try{_dcCEO(q,lv,p)}finally{p.judg=j}};
@@ -3883,7 +3885,7 @@ function purCand(kind,c){const P=purInit();const g=genMgr(kind==='dir'?'dir':'bm
  render()}
 function purSetup(){const P=purInit();const c=Math.round(250e3*infl());if(S.money<c||!P.dc)return;pay(c);P.on=true;P.dir=P.dc;P.dc=null;P.buy=[purPerson('Buyer')];news('🧾 '+S.founder.studio+' launched corporate purchasing under '+P.dir.name+'.');save();render()}
 function purHireCat(c){const P=S.corp.pur;const g=P.cc[c];if(!g)return;P.cat[c]=g;P.cc[c]=null;P.con[c]={d:0,until:S.week+4};news('🧾 '+g.name+' is the new '+COM[c].n.toLowerCase()+' category manager.');save();render()}
-function purBuyers(d){const P=S.corp.pur;if(d>0&&P.buy.length<12)P.buy.push(purPerson('Buyer'));if(d<0&&P.buy.length>0)P.buy.pop();save();render()}
+function purBuyers(d){const P=S.corp.pur;if(d>0&&P.buy.length<Math.max(12,Math.ceil(purLocs()/2)))P.buy.push(purPerson('Buyer'));if(d<0&&P.buy.length>0)P.buy.pop();save();render()}
 function purImpSetup(){const P=S.corp.pur,I=P.imp;const c=Math.round(150e3*infl());if(S.money<c||!I.mc)return;pay(c);I.on=true;I.mgr=I.mc;I.mc=null;I.n=1;I.start=S.week;news('🚢 Import program launched. First containers land in about 12 weeks.');save();render()}
 function purImpN(d){const I=S.corp.pur.imp;I.n=clamp(I.n+d,1,6);save();render()}
 // ---- effects ----
@@ -3914,7 +3916,7 @@ function purLog(t){const P=S.corp.pur;news(t);P.log.unshift({w:S.week,t});if(P.l
 function purSettle(q,yes,who){const P=S.corp.pur,k=P.con[q.c];k.until=S.week+52;if(yes){k.half=false;if(q.good){purLog('🤝 '+COM[q.c].n+' contract locked ('+$m(q.amt)+' commitment) by '+who+'. Good timing.')}else{const v=Math.round(q.amt*rnd(0.02,0.05));spend(v);purLog('📉 '+COM[q.c].n+' prices fell right after '+who+' locked the contract. '+$m(v)+' above market this year.')}}
  else{k.half=true;purLog('✋ '+who+' passed on the '+COM[q.c].n.toLowerCase()+' contract. Branches buy at spot with smaller discounts this year.')}save()}
 function purAsk(q){const P=S.corp.pur;const rec=Math.random()<clamp(0.5+(q.m.judg||100)/400,0.5,0.95)?q.good:!q.good;
- modal('🧾 Contract needs CEO approval',`<p><b>${esc(q.m.name)}</b> (${COM[q.c].n} category) wants to lock a 12-month supply contract.</p><div class="card small"><b>${$m(q.amt)}</b> committed volume across all branches<br><span class="mut">${q.good?pick(['Mill is offering a booking program before a price increase','Futures are rising and supply is tight','Locks in allocation for spring']):pick(['Spot prices have been sliding for two months','Mill rep is pushing hard to close the quarter','Inventory is already heavy at the branches'])}</span><br>${P.dir?'⬆️ Over '+esc(P.dir.name)+'\'s limit of '+$m(S.corp.lim.dir.po)+'<br>':''}💬 ${esc(q.m.name.split(' ')[0])} recommends: <b>${rec?'sign':'pass'}</b></div>`,
+ modal(S.ceo?'🧾 Contract needs CEO approval':'🧾 Contract needs your approval',`<p><b>${esc(q.m.name)}</b> (${COM[q.c].n} category) wants to lock a 12-month supply contract.</p><div class="card small"><b>${$m(q.amt)}</b> committed volume across all branches<br><span class="mut">${q.good?pick(['Mill is offering a booking program before a price increase','Futures are rising and supply is tight','Locks in allocation for spring']):pick(['Spot prices have been sliding for two months','Mill rep is pushing hard to close the quarter','Inventory is already heavy at the branches'])}</span><br>${P.dir?'⬆️ Over '+esc(P.dir.name)+'\'s limit of '+$m(S.corp.lim.dir.po)+'<br>':''}💬 ${esc(q.m.name.split(' ')[0])} recommends: <b>${rec?'sign':'pass'}</b></div>`,
  [{t:'Sign it',c:'good',f:()=>purSettle(q,true,'You')},{t:'Pass',c:'sec',f:()=>purSettle(q,false,'You')}])}
 const _wkPUR=weekly;weekly=function(){_wkPUR();try{purWeek()}catch(e){console.error(e)}};
 if(typeof corpOnly==='function')corpOnly('purWeek');
@@ -3949,10 +3951,14 @@ const hrOn=()=>!!(S.corp&&S.corp.hr&&S.corp.hr.on);
 function hrInit(){const C=corpInit();C.hr=C.hr||{on:false,dir:null,dc:null,gen:[],pay:[],rec:[],bene:'std',auto:true,log:[],recs:[]};return C.hr}
 const hrPerson=t=>({id:S.nid++,name:pick(FIRST)+' '+pick(LAST),av:avatarRand(),t});
 function hrHC(){const C=S.corp;return S.staff.length+(C?C.br.reduce((a,B)=>a+B.team+(B.mgr?1:0),0)+Object.values(C.rms).filter(Boolean).length+Object.values(C.dirs).filter(Boolean).length:0)}
-function hrCov(k){const H=S.corp&&S.corp.hr;if(!hrOn())return 0;const hc=hrHC();if(k==='gen')return Math.min(1,H.gen.length*70/Math.max(1,hc));if(k==='pay')return Math.min(1,H.pay.length*150/Math.max(1,hc));return Math.min(1,H.rec.length*0.34)}
+function hrCov(k){const H=S.corp&&S.corp.hr;if(!hrOn())return 0;const hc=hrHC();if(k==='gen')return Math.min(1,H.gen.length*70/Math.max(1,hc));if(k==='pay')return Math.min(1,H.pay.length*150/Math.max(1,hc));return Math.min(1,H.rec.length*HR_PER.rec/Math.max(1,hc))}
+const HR_PER={gen:70,pay:150,rec:110};
+function hrNeed(k){return Math.max(1,Math.ceil(hrHC()/HR_PER[k]))}
+function hrMax(k){return Math.max(10,Math.ceil(hrNeed(k)*1.5))}
+function hrFit(){const H=S.corp.hr,t={gen:'HR Generalist',pay:'Payroll & Benefits',rec:'Recruiter'};let ch=0;['gen','pay','rec'].forEach(k=>{const n=hrNeed(k);while(H[k].length<n){H[k].push(hrPerson(t[k]));ch++}});if(ch)hrLog('👥 HR staffed up: '+ch+' new hires to cover '+fmt(hrHC())+' people.');save();render()}
 function hrCand(){const H=hrInit();H.dc=genMgr('dir');H.dc.bio=pick(['Ran HR for a 2,000-person building products distributor.','People leader at a national home-improvement chain.','Built the benefits and payroll team at a regional lumber company.']);render()}
 function hrSetup(){const H=hrInit();const c=Math.round(150e3*infl());if(S.money<c||!H.dc)return;pay(c);H.on=true;H.dir=H.dc;H.dc=null;H.gen=[hrPerson('HR Generalist')];H.pay=[hrPerson('Payroll & Benefits')];news('👥 Corporate HR launched under '+H.dir.name+'.');save();render()}
-function hrTeam(k,d){const H=S.corp.hr;const L=H[k];const t={gen:'HR Generalist',pay:'Payroll & Benefits',rec:'Recruiter'}[k];if(d>0&&L.length<10)L.push(hrPerson(t));if(d<0&&L.length>0)L.pop();save();render()}
+function hrTeam(k,d){const H=S.corp.hr;const L=H[k];const t={gen:'HR Generalist',pay:'Payroll & Benefits',rec:'Recruiter'}[k];for(let i=0;i<Math.abs(d);i++){if(d>0&&L.length<hrMax(k))L.push(hrPerson(t));if(d<0&&L.length>0)L.pop()}save();render()}
 function hrBene(k){S.corp.hr.bene=k;news('🏥 Benefits plan changed to '+BENE[k].n+'.');save();render()}
 // ---- effects ----
 const _gcHR=genCand;genCand=function(t,rk){const c=_gcHR(t,rk);if(hrOn()){const b=Math.round(hrCov('rec')*12+(S.corp.hr.bene==='prem'?4:S.corp.hr.bene==='basic'?-4:0));CATS.forEach(x=>c.sk[x.k]=Math.max(10,c.sk[x.k]+b))}return c};
@@ -3992,10 +3998,10 @@ function hrHtml(){const C=S.corp,H=hrInit(),hc=hrHC();
   ${C.br.length<2?'<div class="card"><p class="mut">Open at least 2 branches first.</p></div>':`<div class="card"><h2>1. HR Director</h2>${H.dc?pCard(H.dc,'dir',`<div class="mut small">${$m(H.dc.sal)}/mo</div>`):'<p class="mut small">No candidate yet.</p>'}<div class="row" style="gap:6px;margin-top:6px"><button class="btn sec sm" onclick="hrCand()">${H.dc?'Another candidate':'Find a candidate'}</button><button class="btn sm" ${H.dc&&S.money>=c?'':'disabled'} onclick="hrSetup()">Launch HR · ${$m(c)}</button></div><p class="mut small">Includes an HR generalist and a payroll & benefits specialist.</p></div>`}`}
  const B=BENE[H.bene];const mors=S.staff.filter(s=>!s.founder).map(s=>s.morale).concat(C.br.filter(b=>b.mgr).map(b=>b.mgr.mor));const am=mors.length?mors.reduce((a,b)=>a+b,0)/mors.length:0;
  const risk=C.br.filter(b=>b.mgr&&b.mgr.mor<45);const vac=C.br.filter(b=>!b.mgr);
- const team=(k,label,per,sal,cov)=>`<div class="between small crow"><span style="flex:1"><b>${label}</b> · ${H[k].length}<br><span class="mut">${per} · ${$m(sal*infl())}/mo each</span></span><span class="row" style="gap:4px;align-items:center"><span class="chip2">${pct(cov)}</span><button class="btn sec sm" onclick="hrTeam('${k}',-1)" ${H[k].length?'':'disabled'}>−</button><button class="btn sec sm" onclick="hrTeam('${k}',1)">+</button></span></div>`;
+ const team=(k,label,per,sal,cov)=>`<div class="between small crow"><span style="flex:1"><b>${label}</b> · ${H[k].length}${H[k].length<hrNeed(k)?` <span class="warn">(need ${hrNeed(k)})</span>`:''}<br><span class="mut">${per} · ${$m(sal*infl())}/mo each</span></span><span class="row" style="gap:4px;align-items:center"><span class="chip2">${pct(cov)}</span><button class="btn sec sm" onclick="hrTeam('${k}',-1)" ${H[k].length?'':'disabled'}>−</button><button class="btn sec sm" onclick="hrTeam('${k}',1)" ${H[k].length<hrMax(k)?'':'disabled'}>+</button></span></div>`;
  return `<div class="card"><h2>👥 Corporate HR</h2>${pCard(H.dir,'dir',`<div class="mut small">HR Director · ${$m(H.dir.sal)}/mo</div>`)}
   <div class="kgrid"><div><b>${fmt(hc)}</b><span>employees</span></div><div><b class="${am>=60?'good':am>=40?'':'bad'}">${Math.round(am)}</b><span>avg morale</span></div><div><b>${$m(hc*B.c*infl()*52)}</b><span>extra benefits/yr</span></div></div></div>
-  <div class="card"><h2>Team</h2>${team('gen','HR generalists','Each covers about 70 people: morale, claims, coaching',5200,hrCov('gen'))}${team('pay','Payroll & benefits','Each runs payroll for about 150 people',4800,hrCov('pay'))}${team('rec','Recruiters','Better candidates for every opening, faster vacancy fills',5600,hrCov('rec'))}</div>
+  <div class="card"><div class="between"><h2 style="margin:0">Team</h2>${['gen','pay','rec'].some(k=>H[k].length<hrNeed(k))?'<button class="btn go sm" onclick="hrFit()">Staff to fit</button>':'<span class="chip2">✓ Fully staffed</span>'}</div>${team('gen','HR generalists','Each covers about 70 people: morale, claims, coaching',5200,hrCov('gen'))}${team('pay','Payroll & benefits','Each runs payroll for about 150 people',4800,hrCov('pay'))}${team('rec','Recruiters','Each supports hiring for about 110 people: better candidates, faster fills',5600,hrCov('rec'))}</div>
   <div class="card"><h2>🏥 Benefits plan</h2><div class="grid">${Object.keys(BENE).map(k=>`<button class="opt left ${H.bene===k?'on':''}" onclick="hrBene('${k}')">${BENE[k].ic} ${BENE[k].n} · ${BENE[k].c?'+'+$m(BENE[k].c*infl())+'/person/wk':'no extra cost'}<small>${BENE[k].d}</small></button>`).join('')}</div></div>
   <div class="card"><h2>📋 Hiring recommendations</h2><p class="mut small">For ${esc(MT(C.home).n)}${S.ceo?' (the branch manager follows these)':''}. Updated monthly.</p>${H.recs.length?H.recs.map((r,i)=>`<div class="between small crow"><span style="flex:1;min-width:0"><b>${r.rk?'Hire: '+esc(r.n):'⚠️ '+esc(r.n)}</b><br><span class="mut">${esc(r.why)}</span></span>${r.rk?`<button class="btn sm" ${r.full?'disabled':''} onclick="hrHire(${i})">${r.full?'Office full':'Hire best'}</button>`:''}</div>`).join(''):'<p class="mut small">Staffing looks right for current volume.</p>'}</div>
   <div class="card"><h2>🧭 Branch leadership</h2>${vac.length?vac.map(b=>`<p class="small warn">${esc(MT(b.m).n)} has no manager${H.auto?' · HR is interviewing finalists':''}.</p>`).join(''):''}${risk.length?risk.map(b=>`<div class="between small crow"><span>${esc(b.mgr.name)} · ${esc(MT(b.m).n)}<br><span class="bad">Morale ${Math.round(b.mgr.mor)}: flight risk</span></span><button class="btn sm" onclick="hrRetain(${b.id})">Retention bonus · ${$m(b.mgr.sal*1.5)}</button></div>`).join(''):'<p class="mut small">No managers at risk of leaving.</p>'}
@@ -4070,6 +4076,62 @@ document.head.insertAdjacentHTML('beforeend',`<style>.tkhead{font-size:13px;marg
 .tkin button{width:32px;height:32px;border-radius:8px;border:0;background:rgba(255,255,255,.12);color:inherit;font:800 16px Nunito,system-ui}
 .tktab{width:100%;font-size:13px;border-collapse:collapse;margin-top:6px}.tktab td,.tktab th{padding:3px 6px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
 .tkwrap{max-height:62vh;overflow:auto;padding-right:2px}</style>`);
+
+/* ===== P39: new product lines — steel deck framing, engineered wood siding, prefinished siding ===== */
+LINES.push(
+ {k:'steelframe',n:'Steel Deck Framing',ic:'🏗️',com:'steel',side:'deck',m:0.20,dem:3,mk:y=>Math.min(1.5,Math.max(0.1,(y-2011)*0.1))},
+ {k:'lpsiding',n:'Engineered Wood Siding',ic:'🏠',com:'lumber',side:'deck',m:0.18,dem:5,mk:y=>Math.min(1.4,0.6+(y-2000)*0.03)},
+ {k:'pfsiding',n:'Prefinished Siding',ic:'🎨',com:'lumber',side:'deck',m:0.22,dem:3,mk:y=>Math.min(1.5,Math.max(0.2,(y-2004)*0.08))});
+Object.assign(STY,{steelframe:[['Galvanized steel joists'],['Steel beams & posts'],['Steel ledger & blocking',1]],
+ lpsiding:[['Lap siding'],['Panel siding'],['Trim & fascia'],['Shake siding',1,2006]],
+ pfsiding:[['Prefinished lap siding'],['Prefinished panel & trim'],['Custom color match',1,2010]]});
+LINES.forEach(l=>{if(!l.st)l.st=STY[l.k]});
+Object.assign(BRANDS,{steelframe:[['IronDeck Framing',1],['Forgeline Steel Joist',2]],lpsiding:[['TruLap Engineered',0],['Summit StrandBoard',1],['Cascade Smart Siding',2]],pfsiding:[['PermaHue Prefinish',1],['StoneCoat Factory Finish',2]]});
+Object.assign(JOBT,{steelframe:['Steel-framed rooftop deck','Steel framing for a two-story deck','Fire-zone deck framing package'],
+ lpsiding:['Siding package for a new home','Lap & trim for a 12-home phase','Shop building siding'],
+ pfsiding:['Prefinished siding for a custom home','Color-matched siding & trim package','Prefinished re-side job']});
+Object.assign(SHORTN,{steelframe:'Steel framing',lpsiding:'Eng. siding',pfsiding:'Prefinished'});
+Object.assign(YKIND,{steelframe:'steel',lpsiding:'siding',pfsiding:'sidingpf'});
+Object.assign(YCOL,{steelframe:'#8f979e',lpsiding:'#d9c7a1',pfsiding:'#5d707c'});
+['deckpro','builder'].forEach(t=>{if(CT[t]&&!CT[t].lines.includes('steelframe'))CT[t].lines.push('steelframe')});
+['builder','comm','hoa'].forEach(t=>{if(CT[t])['lpsiding','pfsiding'].forEach(k=>{if(!CT[t].lines.includes(k))CT[t].lines.push(k)})});
+RES.push({k:'l_lpsiding',t:'Product Lines',n:'Engineered Wood Siding',rp:35,c:60e3,u:{lines:['lpsiding']}},
+ {k:'l_pfsiding',t:'Product Lines',n:'Prefinished Siding',rp:40,c:70e3,from:2005,req:['l_lpsiding'],u:{lines:['pfsiding']}},
+ {k:'l_steelframe',t:'Product Lines',n:'Steel Deck Framing',rp:45,c:80e3,from:2012,u:{lines:['steelframe']}});
+{const _tkP=tkKind;tkKind=function(line){if(['steelframe','lpsiding','pfsiding'].includes(line))return 'dwood';return _tkP(line)}}
+{const _ldP=load;load=function(){const r=_ldP.apply(this,arguments);try{if(r&&S){S.mg=S.mg||{};S.tgt=S.tgt||{};LINES.forEach(l=>{if(!S.inv[l.k])S.inv[l.k]={u:0,c:1000};if(S.mg[l.k]==null)S.mg[l.k]=l.m;if(S.tgt[l.k]==null)S.tgt[l.k]=25})}}catch(e){console.error(e)}return r}}
+
+/* ===== P41: building materials — house framing lumber, sheathing, roofing, trusses + a truss plant ===== */
+LINES.push(
+ {k:'dimlum',n:'House Framing Lumber',ic:'🪵',com:'lumber',side:'deck',m:0.15,dem:7,mk:y=>1},
+ {k:'sheath',n:'OSB & Plywood Sheathing',ic:'🟫',com:'lumber',side:'deck',m:0.14,dem:5,mk:y=>1},
+ {k:'roofing',n:'Roofing',ic:'🏠',com:'resin',side:'deck',m:0.22,dem:4,mk:y=>Math.min(1.3,0.8+(y-2000)*0.02)},
+ {k:'ewp',n:'Engineered Wood Products',ic:'📐',com:'lumber',side:'deck',m:0.20,dem:3,mk:y=>Math.min(1.4,0.5+(y-2000)*0.04)},
+ {k:'truss',n:'Roof & Floor Trusses',ic:'🔺',com:'lumber',side:'deck',m:0.25,dem:3,mk:y=>1});
+Object.assign(STY,{dimlum:[['2x4 & 2x6 studs'],['Joists & rafters'],['Beams & headers'],['Treated sill plate']],
+ sheath:[['OSB wall sheathing'],['Plywood roof decking'],['Tongue & groove subfloor'],['Zip-style coated sheathing',1,2010]],
+ roofing:[['Architectural shingles'],['Underlayment & ice shield'],['Metal roofing panels',1],['Ridge vent & flashing']],
+ ewp:[['I-joists'],['LVL beams & headers'],['Glulam beams',1],['Rim board'],['LSL studs & PSL columns',1,2006]],
+ truss:[['Common roof trusses'],['Scissor & vaulted trusses',1],['Floor trusses'],['Girder truss packages',1]]});
+LINES.forEach(l=>{if(!l.st)l.st=STY[l.k]});
+Object.assign(BRANDS,{dimlum:[['Ridgeline SPF',0],['Cascade Doug Fir',1],['Timberline LVL',2]],sheath:[['NorthPanel OSB',0],['Summit Plywood',1],['ShieldWrap Sheathing',2]],
+ roofing:[['Crestline Shingles',1],['Summit Roof Systems',2],['IronPeak Metal Roofing',2]],ewp:[['StrandTech I-Joist',1],['Pacific LVL',1],['Northbeam Glulam',2]],truss:[['Valley Truss Co.',1],['Keystone Components',2]]});
+Object.assign(JOBT,{dimlum:['Framing package for a new home','Lumber package for a 12-home phase','Shop building framing package'],
+ sheath:['Wall & roof sheathing for a spec home','Subfloor package for a duplex','Sheathing for an apartment build'],
+ roofing:['Re-roof for a ranch house','Roofing package for a new subdivision','Metal roof for a shop building'],
+ ewp:['I-joist floor package for a custom home','LVL beam & header package','Glulam ridge beam for a vaulted great room'],
+ truss:['Roof truss package for a custom home','Floor trusses for a two-story build','Truss package for a 10-home phase']});
+Object.assign(SHORTN,{dimlum:'Framing lumber',sheath:'Sheathing',roofing:'Roofing',ewp:'EWP',truss:'Trusses'});
+Object.assign(YKIND,{dimlum:'lum',sheath:'sheet',roofing:'shingle',ewp:'ewp',truss:'truss'});
+Object.assign(YCOL,{dimlum:'#e3cf9f',sheath:'#c9a066',roofing:'#4a4f57',ewp:'#d9b878',truss:'#e0c995'});
+[['builder',['dimlum','sheath','roofing','ewp','truss']],['comm',['dimlum','sheath','roofing','ewp','truss']],['hoa',['roofing']],['deckpro',['dimlum','ewp']]].forEach(([t,ks])=>{if(CT[t])ks.forEach(k=>{if(!CT[t].lines.includes(k))CT[t].lines.push(k)})});
+RES.push({k:'l_dimlum',t:'Product Lines',n:'House Framing Lumber',rp:30,c:70e3,u:{lines:['dimlum']}},
+ {k:'l_sheath',t:'Product Lines',n:'OSB & Plywood Sheathing',rp:30,c:60e3,req:['l_dimlum'],u:{lines:['sheath']}},
+ {k:'l_roofing',t:'Product Lines',n:'Roofing',rp:40,c:80e3,u:{lines:['roofing']}},
+ {k:'l_ewp',t:'Product Lines',n:'Engineered Wood Products',rp:45,c:90e3,from:2003,req:['l_dimlum'],u:{lines:['ewp']}},
+ {k:'l_truss',t:'Product Lines',n:'Roof & Floor Trusses',rp:45,c:90e3,req:['l_dimlum'],u:{lines:['truss']}});
+{const _tkB=tkKind;tkKind=function(line){if(['dimlum','sheath','roofing','ewp','truss'].includes(line))return 'dwood';return _tkB(line)}}
+{const _ldB=load;load=function(){const r=_ldB.apply(this,arguments);try{if(r&&S){S.mg=S.mg||{};S.tgt=S.tgt||{};LINES.forEach(l=>{if(!S.inv[l.k])S.inv[l.k]={u:0,c:1000};if(S.mg[l.k]==null)S.mg[l.k]=l.m;if(S.tgt[l.k]==null)S.tgt[l.k]=25})}}catch(e){console.error(e)}return r}}
 
 /* ===== P20: assistant / operations manager scouts and pitches hires ===== */
 const SCOUT_RK=['asstmgr','opsmgr'];
@@ -4588,10 +4650,10 @@ function fleetBuyPitch(){const F=fpState();if(F.open>S.week||S.week<F.cd||!S.fle
  const shortU=Math.max(6,Math.round(Math.max(bl/2-cap,tb/2)));const P=truckPick(shortU);if(!P)return;const T=TRUCKS[P.best],C=P.cheap?TRUCKS[P.cheap]:null;const V=fleetVoice();
  if(S.ceo){if(S.money>T.cost*3&&fleetBuy(P.best,'branch fleet request'))homeLog&&homeLog('Fleet: bought a '+T.n,'Approved');F.cd=S.week+10;F.short=0;return}
  F.open=S.week+3;const age=S.fleet.length?Math.round(S.fleet.reduce((a,t)=>a+truckAge(t),0)/S.fleet.length):0;
- modal('🚚 We need another truck',`<p><b>${esc(V.who)}</b> has the delivery board up: <b>${bl} units</b> waiting against <b>${cap}/wk</b> of truck capacity, and every truck already has a driver${drivers>usable?` (${drivers-usable} driver${drivers-usable>1?'s are':' is'} waiting on a truck)`:''}. Customers are starting to wait.</p>
-  <p>Recommendation: a <b>${T.ic} ${T.n}</b> for <b>${$m(T.cost)}</b>. It adds about <b>${T.cap} units/wk</b> and costs ${$m(T.up)}/wk to run.${C?` A cheaper ${C.n} (${$m(C.cost)}, +${C.cap}/wk) would ease it, not fix it.`:''}</p><p class="small mut">Fleet: ${S.fleet.length} truck${S.fleet.length>1?'s':''}, average age ${age} yr.</p>`,[
-  choice(`Buy the ${T.n} (${$m(T.cost)})`,'good',()=>{F.open=0;F.short=0;F.cd=S.week+8;fleetBuy(P.best);save();render()},`+${T.cap} units/wk`),
-  ...(C?[choice(`Go cheaper: ${C.n} (${$m(C.cost)})`,'sec',()=>{F.open=0;F.short=0;F.cd=S.week+6;fleetBuy(P.cheap);save();render()},`+${C.cap} units/wk`)]:[]),
+ modal('🚚 We need another truck',`<p><b>${esc(V.who)}</b> has the delivery board up: <b>${fmt(bl)} units</b> waiting against <b>${fmt(cap)}/wk</b> of truck capacity, and every truck already has a driver${drivers>usable?` (${drivers-usable} driver${drivers-usable>1?'s are':' is'} waiting on a truck)`:''}. Customers are starting to wait.</p>
+  <p>Recommendation: a <b>${T.ic} ${T.n}</b> for <b>${$m(T.cost)}</b>. It adds about <b>${fmt(T.cap)} units/wk</b> and costs ${$m(T.up)}/wk to run.${C?` A cheaper ${C.n} (${$m(C.cost)}, +${fmt(C.cap)}/wk) would ease it, not fix it.`:''}</p><p class="small mut">Fleet: ${S.fleet.length} truck${S.fleet.length>1?'s':''}, average age ${age} yr.</p>`,[
+  choice(`Buy the ${T.n} (${$m(T.cost)})`,'good',()=>{F.open=0;F.short=0;F.cd=S.week+8;fleetBuy(P.best);save();render()},`+${fmt(T.cap)} units/wk`),
+  ...(C?[choice(`Go cheaper: ${C.n} (${$m(C.cost)})`,'sec',()=>{F.open=0;F.short=0;F.cd=S.week+6;fleetBuy(P.cheap);save();render()},`+${fmt(C.cap)} units/wk`)]:[]),
   choice('Not now','bad',()=>{F.open=0;F.short=0;F.cd=S.week+8},'Orders keep piling up; asks again in 2 months')])}
 // ---- 2) major maintenance needs sign-off ----
 const SVC=[
@@ -4861,7 +4923,7 @@ function setMode(m){S.mode=m;if(m==='relaxed')S.autoRest=true;save();render()}
 
 // ---------- inbox: weekly events wait here instead of stopping the clock ----------
 let INBOX=[],IN_TICK=false,INB_ID=1;
-const INB_MUST=/Chapter|Out of (Cash|Money)|bankrupt|corporate|CEO mode|CEO approval|Challenge Complete|New company|Welcome|Restore|Backup|Saved|Not enough|Start over|Shop|Already yours|Purchase|Unlock/i;
+const INB_MUST=/Approval Needed|Chapter|Story:|Out of (Cash|Money)|bankrupt|corporate|CEO mode|CEO approval|your approval|Challenge Complete|New company|Welcome|Restore|Backup|Saved|Not enough|Start over|Shop|Already yours|Purchase|Unlock/i;
 const INB_BIG=/another truck|We'|Pitch from|found |recruiter|Go public|Acquisition|Supply Contract|Poaching|move|Offer\b/i;
 const INB_NO=/not now|^pass|put it off|later|skip|politely|decline|ignore|^no\b|not this|back to work|okay|got it|hold the line|deny|reject|^keep|let them go|nice|^ok$/i;
 const INB_REC=/approve|payment plan|file the notice|split it fairly|split it into|team workshop|paid leave|redo the takeoff|bid it as specified|honor|voluntary ot|hold fair|rebuild|appeal to loyalty|tell customers the truth|talk about it|full safety|send the gift|sure/i;
@@ -4910,7 +4972,7 @@ function tabGo(k){if(k==='research'&&lockLeft('research'))return lockedNote('res
 const TAB5=[['menu','🏢','Yard',['menu']],['team','👥','People',['team']],['create','📝','Sales',['create','stock']],['research','🌱','Grow',['research','office','goals','install']],['business','💰','Money',['business','finance','bank','rank','insights']]];
 const _rdS5=renderDock;renderDock=function(){if(!S)return;if(S.ceo)return _rdS5();const aff=resAvailN();const tired=S.staff.filter(s=>s.energy<25||s.morale<25).length;const out=S.lines.filter(k=>S.inv[k].u<1).length;const rq=lockLeft('bids')?0:S.rfqs.filter(r=>!inBid(r.id)).length;
  const badge={menu:S.orders.some(o=>S.week>o.dueW)?'!':'',team:tired||'',create:(S.bids.length<bidCap()?rq:0)+out||'',research:aff>9?'9+':aff||'',business:S.money<50e3?'$':''};
- const html=TAB5.map(([k,i,n,sub])=>{const lk=(k==='research'&&lockLeft('research'))||(k==='business'&&lockLeft('business'));return `<button class="dk ${k==='create'?'fab':''} ${sub.includes(S.tab)?'on':''}" style="${lk?'opacity:.45':''}" onclick="tabGo('${k}')"><span>${lk?'🔒':i}</span>${n}${!lk&&badge[k]!==''?`<i>${badge[k]}</i>`:''}</button>`}).join('');
+ const html=TAB5.map(([k,i,n,sub])=>{const lk=(k==='research'&&lockLeft('research'))||(k==='business'&&lockLeft('business'));return `<button class="dk ${k==='create'?'fab':''} ${sub.includes(S.tab)?'on':''}" style="${lk?'opacity:.45':''}" onclick="tabGo('${k}')"><span>${lk?'🔒':i}</span>${n}${!lk&&badge[k]!==''?`<i>${badge[k]}</i>`:''}</button>`}).join('')+(typeof shopDockBtn==='function'?shopDockBtn():'');
  const el=document.getElementById('dock');if(el.innerHTML!==html)el.innerHTML=html};
 function segHtml(items){return `<div class="row" style="gap:6px;margin:0 0 10px;flex-wrap:wrap">${items.map(([k,l,lk])=>`<button class="btn sm ${S.tab===k?'':'sec'}" ${lk?'disabled':''} onclick="go('${k}')">${lk?'🔒 '+l+' · '+lk+'w':l}</button>`).join('')}</div>`}
 function segFor(k){if(['create','stock'].includes(k))return segHtml([['create','📝 Bids',lockLeft('bids')],['stock','📦 Stock']]);
@@ -4919,7 +4981,7 @@ function segFor(k){if(['create','stock'].includes(k))return segHtml([['create','
 
 // ---------- HUD inbox button ----------
 {const _rhS=renderHud;renderHud=function(){_rhS.apply(this,arguments);if(!S)return;const sp=document.querySelector('#hud .spd');if(!sp||sp.querySelector('.inbx'))return;const n=INBOX.filter(x=>!x.info).length,m=INBOX.length;
- sp.insertAdjacentHTML('afterbegin',`<button class="inbx" onclick="go('inbox')" title="Inbox" style="position:relative">📥${m?`<i style="position:absolute;top:-6px;right:-4px;background:${n?'var(--bad)':'#3fa9ff'};color:#fff;font-style:normal;font-size:10px;font-weight:900;border-radius:99px;padding:1px 5px">${m}</i>`:''}</button>`)}}
+ sp.insertAdjacentHTML('afterbegin',`<button class="inbx" onclick="go('inbox')" title="Inbox" style="position:relative">📥${m?`<i style="position:absolute;top:-6px;right:-4px;background:${n?'var(--bad)':'#3fa9ff'};color:#fff;font-style:normal;font-size:10px;font-weight:900;border-radius:99px;padding:1px 5px">${m}</i>`:''}</button>`);try{renderFloat()}catch(e){}}}
 
 // ---------- upgrade packs: bundle small upgrades so the tree is about a third the size ----------
 const PACKS=[];{const roman=['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];const cats=[...new Set(RES.map(r=>r.t))];
@@ -4932,7 +4994,8 @@ function packPlan(P){const R=P.ks.map(k=>RES.find(r=>r.k===k));const sim=new Set
 function buyPack(i){const P=PACKS[i];const pl=packPlan(P);if(!pl.buy.length||S.rp<pl.kp||S.money<pl.cc)return;const dk=pl.kpF-pl.kp,dc=pl.ccF-pl.cc;S.rp+=dk+1;S.money+=dc+1000;
  pl.buy.forEach(r=>{if(resAvail(r))doResearch(r.k)});led('opex',-dc);news('🌱 '+P.n+' complete');save();render();renderHud()}
 function packRow(P,i){const pl=packPlan(P);const why=pl.done?'':pl.buy.length?(pl.buy.length<pl.R.filter(r=>!has(r.k)).length?pl.buy.length+' of '+pl.R.filter(r=>!has(r.k)).length+' ready now':''):(()=>{const r=pl.R.find(r=>!has(r.k));return r.from&&yearOf(S.week)<r.from?'Opens '+r.from:r.req?'Requires '+r.req.filter(k=>!has(k)).map(k=>(RES.find(y=>y.k===k)||{n:k}).n).join(', '):''})();
- return `<div class="between small" style="padding:8px 0;border-bottom:1px solid rgba(140,210,180,.15);gap:8px"><span style="flex:1"><b>${esc(P.n)}</b>${pl.R.length>1?`<br><span class="mut">${pl.R.map(r=>(has(r.k)?'✓ ':'')+esc(r.n)).join(' · ')}</span>`:''}${why?`<br><span class="mut">${why}</span>`:''}</span>${pl.done?'<span class="good">✓ Done</span>':`<button class="btn sm" ${pl.buy.length&&S.rp>=pl.kp&&S.money>=pl.cc?'':'disabled'} onclick="buyPack(${i})">${pl.kp} KP · ${$m(pl.cc)}</button>`}</div>`}
+ const lk=P.ks.length===1&&(RES.find(r=>r.k===P.ks[0])||{}).u;const art=lk&&lk.lines&&lk.lines[0]&&typeof prodArt==='function'?prodArt(lk.lines[0],34):'';
+ return `<div class="between small" style="padding:8px 0;border-bottom:1px solid rgba(140,210,180,.15);gap:8px">${art}<span style="flex:1"><b>${esc(P.n)}</b>${pl.R.length>1?`<br><span class="mut">${pl.R.map(r=>(has(r.k)?'✓ ':'')+esc(r.n)).join(' · ')}</span>`:''}${why?`<br><span class="mut">${why}</span>`:''}</span>${pl.done?'<span class="good">✓ Done</span>':`<button class="btn sm" ${pl.buy.length&&S.rp>=pl.kp&&S.money>=pl.cc?'':'disabled'} onclick="buyPack(${i})">${pl.kp} KP · ${$m(pl.cc)}</button>`}</div>`}
 resAvailN=function(){return PACKS.filter(P=>{const pl=packPlan(P);return pl.buy.length&&S.rp>=pl.kp&&S.money>=pl.cc}).length};
 researchHtml=function(){const groups=[...new Set(PACKS.map(p=>p.t))];S.bopen=S.bopen||{};const ready=PACKS.map((P,i)=>[P,i]).filter(([P])=>{const pl=packPlan(P);return pl.buy.length&&S.rp>=pl.kp&&S.money>=pl.cc});
  return `<div class="card"><div class="between"><b>🧠 ${Math.floor(S.rp)} KP</b><span class="small mut">+${rpRate().toFixed(1)}/week · ${PACKS.filter(P=>packPlan(P).done).length}/${PACKS.length} done</span></div><p class="mut small" style="margin-bottom:0">Upgrades come in packs. A pack buys everything in it that's ready, at 15% off.</p></div>
@@ -4998,6 +5061,46 @@ function inbUnpack(r){return {id:INB_ID++,title:r.title,html:r.html,w:r.w,info:r
 {const _svI=save;save=function(){if(S&&!DRY){try{S.inbx=INBOX.map(inbPack)}catch(e){console.error(e)}}return _svI.apply(this,arguments)}}
 {const _ldI=load;load=function(){const r=_ldI.apply(this,arguments);try{if(r&&S&&S.inbx){INBOX=S.inbx.map(inbUnpack)}else INBOX=[]}catch(e){console.error(e);INBOX=[]}return r}}
 
+// toasts sit above the dock, whatever its height on this device
+document.head.insertAdjacentHTML('beforeend','<style>#toast{z-index:13}#main{padding-bottom:calc(150px + env(safe-area-inset-bottom))!important}</style>');
+setInterval(()=>{const d=document.getElementById('dock'),t=document.getElementById('toast');if(!d||!t)return;const r=d.getBoundingClientRect();if(r.height)t.style.bottom=Math.max(20,innerHeight-r.top+10)+'px'},700);
+
+// keep the top bar to two rows on phones: company + controls, then stats
+document.head.insertAdjacentHTML('beforeend','<style>@media (max-width:560px){#hud .spd button[title="Sound"]{display:none}#hud .spd button{padding:5px 7px}#hud .spd{gap:0}#hud .brand b{max-width:105px}#hud .brand{padding-right:9px}}</style>');
+
+/* ===== P43: make the shop easy to find ===== */
+document.head.insertAdjacentHTML('beforeend',`<style>#hud .shopbtn,.shopbtn{border:0;padding:0 14px!important;line-height:38px;position:relative;background:linear-gradient(180deg,#ffcf4a,#f5a623)!important;color:#3a2300!important;opacity:1!important;font-size:13px!important;height:auto!important;line-height:30px;white-space:nowrap;border-radius:99px;font-weight:900;padding:0 10px!important;min-width:auto!important;box-shadow:0 2px 0 #b8741a}
+.shopbtn i{position:absolute!important;top:-11px!important;right:-20px!important;left:auto!important;background:#ff4d6d;color:#fff;font-style:normal;font-size:9px;font-weight:900;border-radius:99px;padding:1px 4px}
+.shopban{display:flex;align-items:center;gap:12px;cursor:pointer;background:linear-gradient(135deg,#3a2a08,#5a3e0c);border:1px solid #ffb526}</style>`);
+function shopNew(){try{return !localStorage.getItem('yd_shop_seen')}catch(e){return false}}
+function shopGo(){try{localStorage.setItem('yd_shop_seen','1')}catch(e){}shopOpen();renderDock()}
+// Shop lives on the bottom bar, after Money
+function shopDockBtn(){if(!S||S.ceo||!shopOn())return '';return `<button class="dk dkshop" onclick="shopGo()"><span>🛒</span>Shop${shopNew()?'<i>NEW</i>':''}</button>`}
+document.head.insertAdjacentHTML('beforeend','<style>#dock .dkshop{color:#ffcf4a}#dock .dkshop>span{filter:drop-shadow(0 0 6px rgba(255,190,60,.55))}</style>');
+// a banner at the top of the Money tab
+{const f=PANELS.business[2];PANELS.business[2]=()=>(shopOn()?`<div class="card shopban" onclick="shopGo()"><span style="font-size:34px">🛒</span><span style="flex:1"><b>Yard Dog Shop</b><br><span class="small mut">${ceoUnlocked()?'Know-how, cash and the Founder\'s Pack':'Founder\'s Pack, know-how, cash and CEO mode'}</span></span><span class="btn sm">Open</span></div>`:'')+f()}
+// one nudge, a few weeks into a new game
+{const _wkSh=weekly;weekly=function(){_wkSh.apply(this,arguments);try{if(shopOn()&&shopNew()&&S.gw0!=null&&S.week-S.gw0===5)news('🛒 The Shop is on the bottom bar: Founder\'s Pack, know-how and more.')}catch(e){}}}
+
+/* ===== P44: tester tools — unlock with a code so the app can be tested without real purchases ===== */
+// Tap the "Settings" title 7 times, then enter the tester code. Remove this file before a public release if you want.
+const TEST_HASH=(()=>{let h=0;for(const c of 'CWICK-TEST-2026')h=(h*33+c.charCodeAt(0))>>>0;return h})();
+function testerOn(){try{return localStorage.getItem('yd_tester')==='1'}catch(e){return false}}
+let TAPS=0,TAPT=0;
+function testerTap(){const now=Date.now();if(now-TAPT>1500)TAPS=0;TAPT=now;if(++TAPS<7)return;TAPS=0;
+ if(testerOn()){modal('🧪 Tester mode','<p>Tester mode is on for this device.</p>',[{t:'Turn it off',c:'sec',f:()=>{try{localStorage.removeItem('yd_tester')}catch(e){}render()}},{t:'Keep it'}]);return}
+ const v=prompt('Tester code');if(!v)return;let h=0;for(const c of v.trim().toUpperCase())h=(h*33+c.charCodeAt(0))>>>0;
+ if(h===TEST_HASH){try{localStorage.setItem('yd_tester','1')}catch(e){}news('🧪 Tester mode on: CEO mode unlocked and tester tools added to Settings.');render()}else news('That code didn\'t work.')}
+{const _cuT=ceoUnlocked;ceoUnlocked=function(){return testerOn()||_cuT()}}
+{const _stT=settingsHtml;settingsHtml=function(){let h=_stT.apply(this,arguments);
+ if(testerOn())h=`<div class="card" style="border:1px dashed #ffb526"><h2>🧪 Tester tools</h2><p class="small mut">Only on this device. Purchases in the Shop are not needed while this is on.</p><div class="row" style="gap:6px;flex-wrap:wrap">
+  <button class="btn sm" onclick="if(confirm('Skip ahead to CEO mode with a starter company? This replaces your current game.'))ceoQuickStart()">🏢 Jump to CEO mode</button>
+  <button class="btn sec sm" onclick="earn(1e6,'oth');renderHud()">+$1M</button><button class="btn sec sm" onclick="S.rp+=200;renderHud()">+200 know-how</button>
+  <button class="btn sec sm" onclick="S.rep+=20000;renderHud()">+20K reputation</button><button class="btn sec sm" onclick="S.week+=52;news('🧪 Jumped ahead a year');render();renderHud()">+1 year</button></div></div>`+h;
+ return h}}
+// the tap target: the Settings panel title
+document.addEventListener('click',e=>{const t=e.target;if(S&&S.tab==='settings'&&t&&t.closest&&t.closest('#main .shead h2'))testerTap()},true);
+
 /* ===== P35: 3D performance — fewer rebuilds, graphics quality levels, auto-downgrade on slow devices ===== */
 // 1) Rebuild the whole branch only when people, rooms or upgrades change. Cosmetic changes
 //    (yard stock heights, latest jobs on the board, trophies) refresh at most every 45 seconds.
@@ -5035,6 +5138,14 @@ const GAUTO={last:0,acc:0,n:0,slow:0,skipT:0};
 {const _stP=settingsHtml;settingsHtml=function(){const p=gfxPref();const o=(k,l,d)=>`<button class="opt ${p===k?'on':''}" onclick="gfxSet('${k}')">${l}<small>${d}</small></button>`;
  return _stP.apply(this,arguments).replace('<div class="card"><h2>Office view</h2>',`<div class="card"><h2>Graphics</h2><div class="grid">${o('auto','✨ Auto','Starts balanced, steps down if frames drop'+(p==='auto'?' · now '+GFX:''))}${o('high','🌟 High','Full shadows. Best on newer devices')}${o('balanced','⚖️ Balanced','Lighter shadows, sharper than low')}${o('low','🔋 Low','No shadows, 30 fps. Smoothest on laptops')}</div></div><div class="card"><h2>Office view</h2>`)}}
 
+// While the 3D engine is still loading, show a loading card instead of flashing the classic 2D office
+{const _osW=officeShow;officeShow=function(on){const r=_osW.apply(this,arguments);try{const w=document.getElementById('officeWrap');if(!w)return r;let ph=document.getElementById('o3wait');
+  const waiting=on&&S&&S.view3d!==false&&!window.THREE&&O3.ok!==false;
+  if(waiting){const c2=document.getElementById('office');if(c2)c2.style.display='none';if(!ph){w.insertAdjacentHTML('beforeend',`<div id="o3wait" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#cfe8dc;font-weight:800"><div style="width:110px;height:110px;border-radius:50%;background:radial-gradient(circle at 50% 38%,#3f8c70,#1d4d3f 60%,#163a30);display:flex;align-items:center;justify-content:center;font-size:58px;animation:o3p 1.6s ease-in-out infinite">🐕</div><div>Opening the yard…</div></div><style>@keyframes o3p{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}</style>`)}}
+  else if(ph)ph.remove()}catch(e){console.error(e)}return r}}
+// if the engine never loads, fall back to the classic view after 8 seconds
+setTimeout(()=>{if(!window.THREE&&document.getElementById('o3wait')){O3.ok=false;try{officeShow(true)}catch(e){}}},8000);
+
 /* ===== P36: story keeps pace with history — a chapter that's still open when its era passes wraps up with a partial ending ===== */
 const MISS={
  gate:()=>[['walt',`You didn't check every box I gave you. Doesn't matter. The doors are open and people know your name.`]],
@@ -5064,6 +5175,357 @@ function stClose(nextIdx){const T=ST(),C=CH[T.ch];if(!C)return;const total=C.obj
 // replays of a chapter you didn't finish show how it actually ended
 CH.forEach(C=>{const o=C.outro;C.outro=function(){const d=ST().done.find(x=>x.k===C.k);if(d&&d.skip)return [['walt',`That chapter came and went while you were busy with something else. Happens.`]];if(d&&d.partial)return (MISS[C.k]||MISS.legacy)();return o.apply(this,arguments)}});
 {const _sjS2=storyJournal;storyJournal=function(){let h=_sjS2();const T=ST();CH.forEach((C,i)=>{const d=T.done.find(x=>x.k===C.k);if(d&&(d.partial||d.skip))h=h.replace(`✅ <b>Chapter ${i+1}:`,`${d.skip?'⏭️':'◐'} <b>Chapter ${i+1}:`)});return h}}
+
+/* ===== P37: narrated story + character voices ===== */
+// ---------- narration in scenes: ['narr', text] renders as a story paragraph ----------
+{const _scV=scene;scene=function(lines){let i=0;const parts=[];let buf=[];const flush=()=>{if(buf.length){parts.push(_scV(buf).replace('<div class="scene">','').replace(/<\/div>$/,''));buf=[]}};
+ lines.forEach(L=>{if(L[0]==='narr'){flush();parts.push(`<div class="narr">${L[1]}</div>`)}else buf.push(L)});flush();
+ const data=encodeURIComponent(JSON.stringify(lines.map(([w,t])=>[w,String(t).replace(/<[^>]*>/g,'')])));
+ return `<div class="scene" data-v="${data}">${vOk()&&vPref('on',true)?`<button class="vbtn" onclick="vToggle(this)">🔊 Listen</button>`:''}${parts.join('')}</div>`}}
+document.head.insertAdjacentHTML('beforeend',`<style>.narr{font-style:italic;font-size:14px;line-height:1.55;color:#e9dfc9;background:rgba(255,255,255,.035);border-left:3px solid var(--acc);padding:9px 12px;border-radius:4px}
+.vbtn{align-self:flex-end;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:inherit;border-radius:99px;padding:4px 12px;font-size:12px;font-weight:800;cursor:pointer}
+.scene .talk .bubble,.scene .narr.talk{outline:2px solid var(--acc);outline-offset:1px}</style>`);
+
+// ---------- voices (browser speech, free and offline on most devices) ----------
+function vOk(){return false} // voices shelved for now
+function vPref(k,d){try{const v=localStorage.getItem('yd_v_'+k);return v==null?d:v==='1'}catch(e){return d}}
+function vSet(k,v){try{localStorage.setItem('yd_v_'+k,v?'1':'0')}catch(e){}if(!v)vStop();render()}
+let VQ=null;
+const hashS=s=>{let h=7;for(const c of String(s))h=(h*31+c.charCodeAt(0))>>>0;return h};
+const F_NAMES=/samantha|victoria|karen|moira|tessa|zira|aria|jenny|susan|allison|ava|serena|fiona|female|libby|sonia|natasha|hazel|catherine/i,M_NAMES=/daniel|alex\b|fred|david|mark|guy|aaron|tom\b|male|ryan|eric|christopher|george|arthur|oliver|rishi|lee\b|gordon/i;
+function avGender(av){if(!av)return null;if(av.beard&&av.beard!=='none')return 'm';if(av.makeup&&av.makeup!=='none')return 'f';if(['bun','ponytail','long','bob'].includes(av.hs))return 'f';if(['buzz','mohawk','bald'].includes(av.hs))return 'm';return null}
+function vProfile(who){const T=ST();
+ if(who==='narr')return {key:'narr',g:'f',pitch:1,rate:0.93};
+ if(who==='walt')return {key:'walt',g:'m',pitch:0.92,rate:0.88};
+ if(who==='linda')return {key:'linda',g:'f',pitch:1,rate:0.97};
+ if(who==='gus')return {key:'gus',g:'m',pitch:0.96,rate:0.95};
+ if(who==='me'){const p=S.founder&&S.founder.pron;return {key:'me',g:p==='she'?'f':p==='he'?'m':(avGender((S.staff.find(s=>s.founder)||{}).av)||'m'),pitch:1,rate:0.98}}
+ const P=castOf(who)||{};return {key:who+(P.n||''),g:avGender(P.av)||(hashS(P.n||who)%2?'f':'m'),pitch:1,rate:who==='rival'?1.02:0.98}}
+const VQUAL=v=>{const n=v.name;let q=0;if(/natural|neural/i.test(n))q+=60;if(/online/i.test(n))q+=25;if(/premium/i.test(n))q+=50;if(/enhanced/i.test(n))q+=35;if(/^google/i.test(n))q+=20;if(/siri/i.test(n))q+=40;
+ if(/zira|david|mark|fred|albert|bad news|bahh|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|junior|ralph|kathy|princess/i.test(n))q-=60;if(v.localService===false)q+=5;if(/en-US|en-GB|en-AU|en-CA|en-IE/i.test(v.lang))q+=5;return q};
+const AND_M=/x-(iol|iom|tpd|gbb|gbd|rjs|aub|aud|end|ahp)\b/i,AND_F=/x-(iob|iog|sfg|tpc|tpf|gba|gbc|gbg|aua|auc|cxx|ene)\b/i;
+const VGEN=v=>AND_M.test(v.name)||AND_M.test(v.voiceURI||'')?'m':AND_F.test(v.name)||AND_F.test(v.voiceURI||'')?'f':F_NAMES.test(v.name)?'f':M_NAMES.test(v.name)||/andrew|brian|davis|tony|jason|steffan|roger|evan|nathan|aaron|reed|eddy|rocko|grandpa/i.test(v.name)?'m':/emma|michelle|ana|nancy|jane|sara|amber|ashley|cora|elizabeth|monica|zoe|nicky|joelle|shelley|sandy|flo|grandma|kate|martha|isha|clara|nova|olivia/i.test(v.name)?'f':null;
+let VCAST=null;
+function vVoice(pf){const all=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang));if(!all.length)return null;
+ const sig=all.map(v=>v.name).join('|');if(!VCAST||VCAST.sig!==sig)VCAST={sig,m:{}};if(VCAST.m[pf.key])return all.find(v=>v.name===VCAST.m[pf.key])||null;
+ const ov=(()=>{try{return localStorage.getItem('yd_vo_'+pf.key.replace(/[^a-z]/gi,'').slice(0,12))}catch(e){return null}})();let pickV=ov&&all.find(v=>v.name===ov);
+ if(!pickV&&pf.g==='m'&&!all.some(v=>VGEN(v)==='m')){const pref={walt:/en-?(us)/i,gus:/en-?(au|ca|ie)/i,me:/en-?(gb|uk)/i}[pf.key]||/en-?(gb|au|in|ca|ie|nz)/i;pickV=all.find(v=>pref.test(v.lang)&&VQUAL(v)>-20)||all[hashS(pf.key)%all.length]}
+ if(!pickV){const used=new Set(Object.values(VCAST.m));let pool=all.filter(v=>VGEN(v)===pf.g);if(!pool.length)pool=all;pool=pool.slice().sort((a,b)=>VQUAL(b)-VQUAL(a));
+  const best=VQUAL(pool[0]);const top=pool.filter(v=>VQUAL(v)>=best-20);const fresh=top.filter(v=>!used.has(v.name));const P=fresh.length?fresh:top;
+  pickV=pf.key==='narr'?P[0]:['walt','linda','gus','me'].includes(pf.key)?P[0]:P[hashS(pf.key)%P.length]}
+ VCAST.m[pf.key]=pickV.name;return pickV}
+function vNoMale(){const all=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang));return all.length>0&&!all.some(v=>VGEN(v)==='m')}
+function vStop(){if(!vOk())return;VQ=null;try{speechSynthesis.cancel()}catch(e){}document.querySelectorAll('.scene .talk').forEach(e=>e.classList.remove('talk'));document.querySelectorAll('.vbtn').forEach(b=>b.textContent='🔊 Listen')}
+function vPlay(sc){if(!vOk()||!sc)return;vStop();let lines;try{lines=JSON.parse(decodeURIComponent(sc.dataset.v))}catch(e){return}
+ const els=[...sc.querySelectorAll(':scope > .say, :scope > .narr')];const btn=sc.querySelector('.vbtn');if(btn)btn.textContent='⏹ Stop';
+ const run={i:0};VQ=run;const next=()=>{if(VQ!==run)return;els.forEach(e=>e.classList.remove('talk'));if(run.i>=lines.length){VQ=null;if(btn)btn.textContent='🔊 Listen';return}
+  const [who,text]=lines[run.i];const el=els[run.i];run.i++;if(el)el.classList.add('talk');
+  const clean=text.replace(/\$([\d.]+)K/g,'$$$1 thousand').replace(/\$([\d.]+)M/g,'$$$1 million').replace(/·/g,',').replace(/\.\.\./g,'…');
+  const parts=clean.match(/[^.!?…]+[.!?…]+["”']?|[^.!?…]+$/g)||[clean];const pf=vProfile(who);const v=vVoice(pf);let k=0;
+  const say=()=>{if(VQ!==run)return;if(k>=parts.length){setTimeout(next,who==='narr'?450:300);return}const u=new SpeechSynthesisUtterance(parts[k++].trim());if(v){u.voice=v;u.lang=v.lang}u.pitch=pf.g==='m'&&vNoMale()&&pf.key!=='narr'?Math.min(pf.pitch,0.78):pf.pitch;u.rate=pf.rate;u.volume=1;
+   u.onend=()=>setTimeout(say,/[?!]$/.test(u.text)?240:170);u.onerror=()=>setTimeout(say,50);speechSynthesis.speak(u)};say()};next()}
+function vToggle(b){const sc=b.closest('.scene');if(VQ){vStop();return}vPlay(sc)}
+if(vOk()){try{speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>speechSynthesis.getVoices()}catch(e){}
+ // auto-play the first scene that appears in a pop-up
+ new MutationObserver(()=>{if(!vPref('on',true)||!vPref('auto',true))return;const sc=document.querySelector('#modal .scene:not([data-played])');if(!sc)return;sc.dataset.played='1';setTimeout(()=>{if(document.body.contains(sc))vPlay(sc)},350)}).observe(document.body,{childList:true,subtree:true});
+ {const _maV=mAct;mAct=function(){vStop();return _maV.apply(this,arguments)}}}
+
+// ---------- chapter narration + interludes ----------
+const NARR={
+ gate:{open:()=>`Spring, 2000. The old Kessler lot hasn't sold a roll of wire in two years. The gate sticks, the office smells like motor oil, and the sign out front still has a bullet hole in the K. ${fN()} signs the lease anyway.`,
+  close:()=>`By the end of that first stretch, the gate didn't stick anymore. Somebody had greased it without being asked. That's usually how you know a place is going to make it.`},
+ word:{open:()=>`Word travels slow in this business, then all at once. A contractor tells his brother-in-law. The brother-in-law tells his whole crew at the bar on Friday. By Monday, there's a line at the counter.`,
+  close:()=>`The phone rang more that year than the year before. Then it rang more the year after that. ${coN()} had stopped being "the new place."`},
+ room:{open:()=>`Success has a smell, and it smells like a yard with nowhere left to put anything. Pallets in the aisles. Rolls of fabric stacked by the restroom. Something had to give.`,
+  close:()=>`The new place was bigger than anyone needed. For about six months.`},
+ rival:{open:()=>`Every town has room for a certain number of fence yards. Nobody knows exactly what that number is, but everyone in the business can feel when it's been reached.`,
+  close:()=>`The rivalry never really ended. It just settled into the background, like a radio station you stop noticing until it plays a song you hate.`},
+ crash:{open:()=>`It started quietly. A builder in the north valley stopped returning calls. A subdivision paused "for the winter." By the time the news used the word "crisis," everyone in the trades already knew.`,
+  close:()=>`The recession left a lot of empty lots in the valley. Some of them used to be fence yards. ${coN()} wasn't one of them.`},
+ rebuild:{open:()=>`Recoveries don't announce themselves. One week, a builder calls back. The next, he orders twice what he said he would. The yards that survived were about to find out how much they could carry.`,
+  close:()=>`The Regional Hub opened on a Monday. By Thursday, someone had already parked a forklift in the wrong spot. Some things never change.`},
+ lumber:{open:()=>`2020. Nobody had a plan for this one. People stuck at home looked out their windows, decided they needed a new fence and a bigger deck, and called every yard in the region on the same afternoon.`,
+  close:()=>`Prices came back down eventually. The customers who got their material from ${coN()} that year never forgot it.`},
+ legacy:{open:()=>`There's a point in every business when the question changes from "will we make it?" to "what will we leave behind?" ${fN()} reached that point on a Tuesday, sitting in the truck, watching the crew load a flatbed.`,
+  close:()=>`The sign out front is new now. The bullet hole is gone. But if you ask anyone who's worked there long enough, they'll tell you the gate is the same one. It still doesn't stick.`}};
+const BEATS={
+ gate:{o0:()=>[['narr',`The first real job came in on a Thursday: 400 feet of chain link around a church parking lot.`],['walt',`See? Pastor Dan doesn't buy from just anybody. That job'll bring you three more.`],['me',`I almost priced it too low.`],['walt',`Everybody does the first time. The trick is not doing it the second time.`]],
+  o1:()=>[['crew',`First week on the job, boss. I'll be honest, I didn't think this place would still be open by fall.`],['me',`What changed your mind?`],['crew',`You were here at 5:45 this morning. Nobody's ever beat me in before.`]],
+  mid:()=>[['narr',`The first winter is the hardest. Nobody builds fence in January. The yard goes quiet, and the bills don't.`],['walt',`This is when you find out who you are. Clean the yard. Count the stock. Call every contractor on your list and ask about their families. Spring always comes.`]]},
+ word:{o0:()=>[['linda',`I drove past your yard on Saturday. There were six trucks waiting at the gate before you opened.`],['me',`We had a big order go out early.`],['linda',`That's not what I mean. Six trucks means six people decided you were worth the drive. Banks notice things like that.`]],
+  o1:()=>[['narr',`The third truck arrived with a dent in the tailgate and 180,000 miles on it. The crew named it Old Faithful by lunch.`],['crew',`She pulls a little to the left, but she'll haul anything you put on her.`]],
+  mid:()=>[['walt',`A contractor told me you gave him Net 30 on his first order. Gutsy.`],['me',`He'd been burned by the big-box store. Figured he deserved a chance.`],['walt',`Just remember who you trusted, and why. You'll need to know that when one of 'em doesn't pay.`]]},
+ room:{o0:()=>[['narr',`Moving day took three weekends, two rented forklifts and every favor ${fN()} had. Somebody brought a grill. By Sunday night, it felt like a party.`],['crew',`The break room has a microwave AND a window. I might cry.`]],
+  o2:()=>[['narr',`Ten people. Ten families depending on the same yard.`],['me',`Some nights I think about that and can't sleep.`],['walt',`Good. The day you stop thinking about it is the day you should sell.`]],
+  mid:()=>[['linda',`Your numbers look good, ${fN()}. Your payroll looks bigger. I just want to make sure you're growing on purpose, not by accident.`]]},
+ rival:{o0:()=>[['narr',`The bid board at the contractor's association started to look like a scoreboard. ${esc(ST().riv)}. ${coN()}. ${esc(ST().riv)}. ${coN()}.`],['rival',`Cute pricing on the hospital job. Hope you can actually deliver it.`],['me',`It's already on the truck.`]],
+  o1:()=>[['narr',`The year-end numbers came in on a gray Tuesday morning. ${coN()} had outsold ${esc(ST().riv)} for the first time.`],['walt',`I won't say I told you so. Mostly because I didn't. I wasn't sure.`]],
+  mid:()=>[['crew',`One of ${esc(ST().riv)}'s drivers was at the gas station this morning. Asked if we were hiring.`],['me',`Are they having trouble over there?`],['crew',`Didn't say. Didn't have to.`]]},
+ crash:{o1:()=>[['narr',`Payroll Friday. ${fN()} sat in the truck for twenty minutes before going in, running the numbers one more time.`],['crew',`We heard what happened at the other yard. Twelve people, gone in one afternoon.`],['me',`Not here. Not while I can help it.`]],
+  o2:()=>[['linda',`I've had to call four business owners this month to talk about their loans. I'm glad I don't have to call you.`],['me',`Don't jinx it.`]],
+  mid:()=>[['narr',`The phones were quiet that year. The crew repainted the whole yard, re-racked every bay and fixed every truck that had a squeak. Nobody asked them to.`],['walt',`See that? That's what a good crew does when there's nothing to do. Remember it when things get busy again.`]]},
+ rebuild:{o1:()=>[['narr',`The Regional Hub. More floor than the first three locations combined.`],['gus',`I'll be honest, ${fN()}. When I first came out here, I didn't think you'd last. Now I'm putting your name in front of my boss.`]],
+  o2:()=>[['narr',`The contractors who stuck with ${coN()} through the bad years started bringing their kids around. Some of them were running crews of their own now.`],['crew',`That's the third second-generation account this month.`]],
+  mid:()=>[['walt',`My knees are done, ${fN()}. The doctor says no more ladders. So I guess I'll just have to sit at your counter and tell people what they're doing wrong.`],['me',`You've been doing that for years.`],['walt',`Now it's official.`]]},
+ lumber:{o0:()=>[['narr',`Cedar went up 40% in a month. Then it went up again. Then the mill stopped quoting prices at all.`],['gus',`I can get you two loads. Maybe. If you take them at whatever the price is the day they ship.`],['me',`Send them.`]],
+  o1:()=>[['crew',`A homeowner tried to tip me twenty bucks for finding him eight bags of post mix.`],['me',`Did you take it?`],['crew',`Bought the crew donuts with it.`]],
+  mid:()=>[['narr',`The phones never stopped. ${fN()} started sleeping on the couch in the office twice a week.`],['linda',`Go home, ${fN()}. The yard will still be here in the morning. That's the whole point of building it right.`]]},
+ legacy:{o1:()=>[['narr',`Thirty-five people. Thirty-five lunches in the break room, thirty-five birthdays on the calendar.`],['crew',`Somebody asked me where I work, and before I could answer, my kid said, "${coN()}." Like it was the family business.`]],
+  mid:()=>[['walt',`I've been thinking about my first yard. Didn't last. You know why? I tried to do everything myself.`],['me',`And now?`],['walt',`Now I watch you let other people be good at things. That's the whole trick. Took me forty years to figure that out.`]]}};
+// opening narration goes at the top of every chapter, closing narration on every full ending
+CH.forEach(C=>{const N=NARR[C.k];if(!N)return;const i=C.intro,o=C.outro;C.intro=function(){return [['narr',N.open()]].concat(i.apply(this,arguments))};
+ C.outro=function(){const L=o.apply(this,arguments);const d=ST().done.find(x=>x.k===C.k);return d&&(d.partial||d.skip)?L:L.concat([['narr',N.close()]])}});
+function beatShow(C,lines){modal(`📖 Story: ${C.n}`,`<div class="chapter">${dateStr(S.week)}</div>${scene(lines)}`,[{t:'Continue'}])}
+function beatsWeek(){if(!S||!S.founder)return;const T=ST();if(!T.active||MQ.length||(typeof MG!=='undefined'&&MG))return;const C=CH[T.ch];const B=C&&BEATS[C.k];if(!B)return;T.bf=T.bf||{};
+ const k=i=>C.k+':'+i;
+ if(S.week-T.st<=1){C.objs.forEach((o,i)=>{if(objDone(o))T.bf[k('o'+i)]=1});return}
+ for(let i=0;i<C.objs.length;i++){if(B['o'+i]&&!T.bf[k('o'+i)]&&objDone(C.objs[i])&&!C.objs.every(objDone)){T.bf[k('o'+i)]=1;beatShow(C,B['o'+i]());return}}
+ if(B.mid&&!T.bf[k('mid')]&&S.week-T.st>=30){T.bf[k('mid')]=1;beatShow(C,B.mid())}}
+// a year in review, told by the narrator and someone who'd have an opinion
+function yearBeat(y){if(!S||!S.founder||!S.led)return;const L=S.led[y],P=S.led[y-1];if(!L||!L.rev)return;const g=P&&P.rev?(L.rev-P.rev)/P.rev:null;const net=L.rev-L.cogs-L.opex+(L.oth||0);
+ const tone=g==null?'first':g>0.15?'boom':g>0?'up':g>-0.1?'flat':'down';
+ const nar={first:`Fiscal ${y} closed out ${coN()}'s first full year: ${$m(L.rev)} in sales, ${net>=0?$m(net)+' in profit':'a loss of '+$m(-net)}. Not bad for a lot with a sticky gate.`,
+  boom:`Fiscal ${y} closed with ${$m(L.rev)} in sales, up ${Math.round(g*100)}%. The crew had stopped asking whether there'd be work next month and started asking where they'd park.`,
+  up:`Fiscal ${y} closed with ${$m(L.rev)} in sales, a ${Math.round(g*100)}% climb. Steady. The kind of year nobody tells stories about, and every owner secretly wants.`,
+  flat:`Fiscal ${y} closed with ${$m(L.rev)} in sales, about where the year before had ended. Nobody celebrated. Nobody panicked either.`,
+  down:`Fiscal ${y} closed with ${$m(L.rev)} in sales, down ${Math.round(-g*100)}%. ${fN()} read the report twice, then went out to the yard to help load a truck.`}[tone];
+ const who=yearOf(S.week)<2009?'walt':pick(['walt','linda','gus']);
+ const say={walt:{first:`One year. Most yards don't see two. Let's see if you're most yards.`,boom:`Don't let it go to your head. Busy years hide mistakes.`,up:`Slow and steady. I like it.`,flat:`Flat's not failure. Flat's a breath. Take it.`,down:`I've had worse. Twice. You'll come back.`},
+  linda:{first:`The bank's happy. That's rare. Enjoy it.`,boom:`That's the kind of growth that makes my committee nervous. In a good way. Mostly.`,up:`Your file is boring, ${fN()}. That's a compliment.`,flat:`Hold your cash close this year.`,down:`Call me before you need me, not after.`},
+  gus:{first:`Good first year. The mill noticed.`,boom:`I'll need to bump your allocation. Again.`,up:`You're on my short list for spring loads.`,flat:`Market's like that sometimes. I'll keep your trucks full.`,down:`Everybody's down. You're down less than most.`}}[who][tone];
+ modal(`📖 Story: The year ${y}`,scene([['narr',nar],[who,say]]),[{t:'Continue'}])}
+{const _fyV=fyClose;fyClose=function(y){_fyV.apply(this,arguments);try{if(S&&!S.ceo&&S.founder&&S.week>20)setTimeout(()=>yearBeat(y),0)}catch(e){console.error(e)}}}
+{const _wkV=weekly;weekly=function(){_wkV.apply(this,arguments);try{beatsWeek()}catch(e){console.error(e)}}}
+
+// ---------- settings ----------
+{const _stV=settingsHtml;settingsHtml=function(){const h=_stV.apply(this,arguments);if(!vOk())return h;const on=vPref('on',true),au=vPref('auto',true);
+ return `<div class="card"><h2>🔊 Character voices</h2><p class="mut small">Story scenes are read aloud using your device's built-in voices. Each character keeps the same voice.</p><div class="grid">
+ <button class="opt ${on?'on':''}" onclick="vSet('on',${!on})">${on?'✅ Voices on':'🔇 Voices off'}<small>Tap 🔊 Listen on any scene</small></button>
+ <button class="opt ${on&&au?'on':''}" ${on?'':'disabled'} onclick="vSet('auto',${!au})">${au?'▶️ Auto-play':'⏸ Tap to play'}<small>Play scenes when they open</small></button></div>
+ ${on?vCastHtml():''}</div>`+h}}
+function vTest(who){const L={narr:'Spring, 2000. The old Kessler lot hasn\'t sold a roll of wire in two years.',walt:'Forty years of fence, kid. The trick isn\'t being smart. It\'s being stubborn.',linda:'Your file is boring. That\'s a compliment.',gus:'I can get you two loads. Maybe.',me:'We can move it.'}[who];const d=document.createElement('div');d.innerHTML=scene([[who,L]]);vPlay(d.firstChild)}
+function vPick(who,name){try{if(name)localStorage.setItem('yd_vo_'+who,name);else localStorage.removeItem('yd_vo_'+who)}catch(e){}VCAST=null;vTest(who);render()}
+function vCastHtml(){const all=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang)).sort((a,b)=>VQUAL(b)-VQUAL(a));if(!all.length)return '<p class="small mut">Voices are still loading. Reopen Settings in a moment.</p>';
+ const best=VQUAL(all[0]);const rows=[['narr','📖 Narrator'],['walt','Walt'],['linda','Linda'],['gus','Gus'],['me','You']].map(([k,n])=>{const cur=vVoice(vProfile(k));const ov=(()=>{try{return localStorage.getItem('yd_vo_'+k)}catch(e){return null}})();
+  return `<div class="between small" style="gap:6px;padding:4px 0"><b style="width:78px">${n}</b><select style="flex:1;min-width:0" onchange="vPick('${k}',this.value)"><option value="">Auto${!ov&&cur?' ('+esc(cur.name.replace(/Microsoft |Google | Online \(Natural\)| - English.*$/g,''))+')':''}</option>${all.map(v=>`<option value="${esc(v.name)}" ${ov===v.name?'selected':''}>${esc(v.name.replace(/ - English.*$/,''))}${VQUAL(v)>=50?' ★':''}</option>`).join('')}</select><button class="btn sec sm" onclick="vTest('${k}')">▶</button></div>`}).join('');
+ const tip=vNoMale()?`<p class="small" style="margin:8px 0 0;background:rgba(255,181,38,.12);padding:8px;border-radius:8px">💡 Your phone's browser only offers one voice per accent, and they're female. The game gives the men a lower pitch and different accents so you can tell them apart. For real male voices on Android: Settings → search <b>Text-to-speech</b> → Speech Services by Google → ⚙️ → Install voice data → English (United States) → pick a male voice (e.g. Voice IV), then reload. Or play on a laptop in Microsoft Edge.</p>`:best<50?`<p class="small" style="margin:8px 0 0;background:rgba(255,181,38,.12);padding:8px;border-radius:8px">💡 Your device only has basic voices. For warmer ones: <b>iPad/iPhone</b>, Settings → Accessibility → Spoken Content → Voices → English, and download a voice marked <b>Premium</b> or <b>Enhanced</b> (Ava, Zoe, Evan, Nathan). <b>Windows</b>, open the game in <b>Microsoft Edge</b>, which includes free natural voices (Aria, Guy, Jenny, Andrew). Then reload the game.</p>`:`<p class="small mut" style="margin:8px 0 0">★ marks the most natural voices on this device.</p>`;
+ return `<p class="small" style="margin:10px 0 4px"><b>Who sounds like who</b></p>${rows}${tip}`}
+// stop talking if voices get switched off mid-scene, or the page is hidden
+document.addEventListener('visibilitychange',()=>{if(document.hidden)vStop()});
+
+/* ===== P38: the Kessler mystery — a story throughline with choices that come back later ===== */
+const RV='Royce Vance';
+const rivN=()=>{stRival();return esc(ST().riv)},rivB=()=>{stRival();return esc(ST().rivO.n)};
+const crewP=()=>S.staff.find(s=>s.comp)||S.staff.find(s=>!s.founder);
+const fl=k=>(ST().flags||{})['b:'+k];
+const setFl=(k,v)=>{const T=ST();T.flags=T.flags||{};T.flags['b:'+k]=v};
+function later(w,amt,t){const T=ST();T.later=T.later||[];T.later.push({w:S.week+w,amt,t})}
+const accWarm=n=>S.accts.forEach(a=>a.rel=clamp(a.rel+n,0,100));
+// beats: {lines, q, ch:[[label,cls,fn,hint]], must, at}
+const B3={
+ gate:{
+  ledger:{must:1,at:10,s:()=>({lines:[['narr',`Clearing out the back office, ${fN()} found a banker's box wedged behind the filing cabinet. <b>KESSLER FENCE & SUPPLY, 1987–1998.</b>`],['narr',`Most of it was invoices. But the last ledger page had a single entry, circled three times in red ink: <b>"R.V. — $184,000 — NEVER PAID."</b>`],['crew',`Who's R.V.?`],['me',`No idea. But somebody wanted us to see this.`]],
+   q:'What do you do with the ledgers?',ch:[['Lock them in your desk','sec',()=>setFl('ledger','keep'),'Keep the trail warm'],['Show them to Walt','good',()=>setFl('ledger','walt'),'He knew this lot before you did'],['Toss them. Old news.','sec',()=>{setFl('ledger','toss');S.rp+=5},'Focus on the business · +5 know-how']]})},
+  walt:{at:20,if:()=>fl('ledger')==='walt',s:()=>({lines:[['narr',`Walt turned the ledger pages slowly. When he reached the red circle, his hand stopped.`],['walt',`Where did you find this?`],['me',`Behind the filing cabinet. Walt, who's R.V.?`],['narr',`He closed the book, set it on the desk, and walked out without a word. His coffee was still steaming.`]]})}},
+ word:{
+  rumor:{must:1,at:14,s:()=>({lines:[['crew',`Contractor at the counter just asked if it's true we're going under. Said he heard it from a "reliable source."`],['linda',`It's not just talk, ${fN()}. Someone pulled a credit inquiry on ${coN()} last month. Not you, not a lender, not a supplier.`],['me',`Then who?`],['linda',`The request came through a holding company I've never heard of. That's what bothers me.`]],
+   q:'How do you answer the rumor?',ch:[['Call every account yourself','good',()=>{accWarm(6);S.rep+=400;setFl('rumor','calls')},'Accounts warm up · +400 reputation'],['Find out who\'s behind it','sec',()=>{S.rp+=10;setFl('rumor','hunt')},'+10 know-how · you start asking around'],['Ignore it. Results talk.','sec',()=>{S.rep-=300;setFl('rumor','ignore')},'−300 reputation for now']]})},
+  digging:{at:40,if:()=>fl('rumor')==='hunt',s:()=>({lines:[['narr',`It took six weeks and a lot of coffee with county clerks. The holding company traced back to a single name on a 1999 filing: <b>${RV}</b>.`],['me',`R.V.`],['narr',`${fN()} stared at the paper for a long time.`]]})},
+  waltback:{at:55,if:()=>fl('ledger')==='walt',s:()=>({lines:[['walt',`I owe you an explanation about those ledgers.`],['me',`You don't owe me anything.`],['walt',`I do. Not today. But I do.`]]})}},
+ room:{
+  confess:{must:1,at:12,s:()=>({lines:[['narr',`Walt showed up after close with two coffees and didn't drink either one.`],['walt',`Ray Kessler was my brother-in-law. Best fence man I ever knew.`],['walt',`In '97, a contractor nobody had heard of ordered $184,000 of material on credit. Took every roll of fabric, every post, every gate Ray had. Then he disappeared.`],['me',`R.V.`],['walt',`${RV}. Ray couldn't prove it. Six months later he lost the yard. A year after that, Royce opened <b>${rivN()}</b> across town with a yard full of material.`],['walt',`Ray never got over it. I'm telling you because Royce's people are going to notice you. They noticed Ray, too.`]]})},
+  ticket:{at:30,if:()=>fl('ledger')!=='toss',s:()=>({lines:[['narr',`During the move, the Kessler box fell off a pallet and split open. Something slid out from under the back cover: a carbon-copy delivery ticket, faded pink.`],['narr',`<b>Received by: R. Vance.</b> The signature was shaky, but readable.`],['crew',`Boss… is that what I think it is?`]]})},
+  baby:{at:45,s:()=>{const c=crewP();return {lines:[['crew',`Can I grab you for a second? My wife's due in March. First kid. I wanted you to hear it from me before the rumor mill got it.`]],
+   q:'What do you say?',ch:[['"Take two weeks paid when the baby comes."','good',()=>{integ(3);if(c)moraleAdd(c,25);setFl('baby','leave')},'Integrity +3 · they\'ll remember this'],['Give them a raise','sec',()=>{if(c){c.salary=Math.round(c.salary*1.08/100)*100;moraleAdd(c,15)}setFl('baby','raise')},'+8% pay'],['"Congratulations. Big news."','sec',()=>setFl('baby','congrats'),'A handshake']]}}}},
+ rival:{
+  proof:{must:1,at:16,s:()=>({lines:[['narr',`A woman named Marlene called the counter on a Tuesday. She'd kept Ray Kessler's books for eleven years.`],['narr',`"I kept copies of everything," she said. "Including the original delivery ticket, the one Royce Vance signed with his own hand. Ray told me to burn it. I never could."`],['narr',`Now ${fN()} had the ledger, the ticket and a witness. And ${rivN()} was winning bids all over town.`]],
+   q:'What do you do with the proof?',ch:[[`Take it to the contractors' association`,'bad',()=>{const R=stRival();R.skill=Math.max(5,R.skill-0.6);S.rep+=1500;setFl('proof','expose')},'Their reputation takes a hit · +1,500 reputation'],[`Confront ${rivB()} privately`,'sec',()=>{const R=stRival();R.skill=Math.max(5,R.skill-0.2);S.rep+=500;setFl('proof','deal')},'Make a deal behind closed doors'],['Give it all to Walt. It\'s his family\'s story.','good',()=>{integ(6);setFl('proof','walt')},'Integrity +6']]})},
+  fallout:{must:1,at:40,s:()=>{const p=fl('proof');
+   if(p==='expose')return {lines:[['narr',`The association pulled ${rivN()} from its preferred-supplier list. Two weeks later, ${rivB()} slashed chain link prices 15% across the whole county.`],['rival',`You want a war over something that happened before either of us was in this business? Fine. Let's see who runs out of money first.`]],
+    q:'Do you match their prices?',ch:[['Match them, job for job','bad',()=>{spend(40e3);S.rep+=600;setFl('war','match')},'−$40K in margin · +600 reputation'],['Hold your prices. Sell service.','sec',()=>{S.rep-=200;accWarm(4);setFl('war','hold')},'Lose a few jobs, keep your margin'],[`Call ${rivB()} and end it`,'good',()=>{integ(3);setFl('war','truce')},'Integrity +3']]};
+   if(p==='deal')return {lines:[['rival',`Royce is my uncle. He's dying, ${fN()}. Lungs. I won't defend what he did. I wasn't even out of high school.`],['rival',`So here's what I can offer. We stay out of your three biggest accounts. You keep that ticket in a drawer.`],['me',`And if Walt asks?`],['rival',`Then you tell him the truth. I'd rather you did, honestly.`]]};
+   return {lines:[['narr',`Walt held the pink ticket in both hands for a long time.`],['walt',`Thirty years I wanted this. Now I've got it and I don't know what to do with it.`],['walt',`Ray's buried up at Greenwood. Think I'll take it up there Sunday. Tell him we found it. That's enough for me.`],['narr',`It was the first time anyone at ${coN()} had seen Walt cry. Nobody ever mentioned it.`]]}}}},
+ crash:{
+  call:{must:1,at:10,s:()=>{const p=fl('proof');return {lines:[['narr',`The phone rang at 11:40 on a Thursday night. ${fN()} almost let it go to voicemail.`],['rival',`It's ${rivB()}. ${p==='expose'?`I know I'm the last person you want to hear from. After what you did to my uncle's name, you're the last person I wanted to call.`:`Sorry about the hour.`} Royce passed in October. Our bank is pulling the line. ${rivN()} won't make it to spring.`],['rival',`I've got forty people. Some of them have been with us twenty years. Will you take any of them?`]],
+   q:'What do you do?',ch:[['Hire six of their best','good',()=>{spend(60e3);S.rep+=800;integ(4);setFl('call','hire')},'−$60K · +800 reputation · Integrity +4'],['Buy their inventory at 40 cents on the dollar','sec',()=>{spend(110e3);later(10,190e3,`Sold through ${ST().riv}'s old inventory`);setFl('call','buy')},'−$110K now · pays back in about 10 weeks'],['Let them go under','bad',()=>{const R=stRival();R.skill=Math.max(4,R.skill-1.5);integ(-4);setFl('call','sink')},'Your rival collapses · Integrity −4']]}}},
+  hard:{at:45,s:()=>{const c=crewP();return {lines:[['crew',`Can we talk? My ${fl('baby')?'wife lost her':'partner lost their'} job last month. There's a warehouse gig in the valley paying three dollars more an hour. I don't want to go. I might have to.`]],
+   q:'What do you do?',ch:[['Match the warehouse pay','good',()=>{if(c){c.salary=Math.round(c.salary*1.12/100)*100;moraleAdd(c,25)}setFl('stay','match')},'+12% pay'],['Promote them to lead','sec',()=>{if(c){c.salary=Math.round(c.salary*1.06/100)*100;moraleAdd(c,20);c.lead=(c.lead||60)+15}setFl('stay','lead')},'+6% pay, more responsibility'],['"I understand. Door\'s always open."','sec',()=>{if(c)moraleAdd(c,-20);setFl('stay','go')},'They stay for now, but it hurts']]}}}},
+ rebuild:{
+  after:{must:1,at:12,s:()=>{const c=fl('call');
+   if(c==='sink')return {lines:[['narr',`The old ${rivN()} building sold at a county auction for less than the land was worth. ${fN()} drove past it on the way home and didn't stop.`],['walt',`You did what you had to. Doesn't mean you have to like it.`]]};
+   return {lines:[['rival',`${c==='hire'?`Those six people you took? Every one of them still calls me on my birthday.`:`We're a third the size we were.`} We made it, barely.`],['rival',`I wanted you to know: we run it honest now. Every invoice. Every ticket. I keep Royce's old pen in my desk so I never forget why.`],['me',`Walt would want to hear that.`],['rival',`Then maybe you could tell him. I don't think he'd take my call.`]]}}},
+  royce:{at:35,if:()=>fl('call')!=='sink',s:()=>({lines:[['narr',`${fN()} drove Walt out to ${rivN()}'s yard on a gray Saturday morning. Neither of them talked much on the way.`],['narr',`${rivB()} was waiting at the gate. The two men shook hands. Then Walt did something no one expected: he pulled ${rivB()} into a hug.`],['walt',`It wasn't you, kid. It was never you.`]]})},
+  gus:{at:50,s:()=>({lines:[['gus',`I've got a problem, and it's a good one. A national homebuilder wants every board of my cedar allocation, and they want it through you.`],['gus',`Thing is, that means telling your small contractors to wait three months. The ones who stuck with you in '08.`]],
+   q:'What do you tell Gus?',ch:[['Take the builder\'s business','bad',()=>{earn(250e3,'oth');S.rep-=1000;accWarm(-10);setFl('gus','builder')},'+$250K · your regulars feel it'],['Protect your regulars','good',()=>{S.rep+=800;accWarm(6);setFl('gus','regulars')},'+800 reputation · loyalty deepens'],['Split it down the middle','sec',()=>{earn(110e3,'oth');setFl('gus','split')},'+$110K · nobody\'s thrilled']]})}},
+ lumber:{
+  poach:{must:1,at:14,s:()=>{const kept=/Keep everyone/.test((ST().flags||{}).crash||'');return kept?{lines:[['narr',`A recruiter from Northline Building Supply set up in the yard's parking lot, handing out business cards. Twenty percent raises, signing bonuses.`],['crew',`They gave me a card. I tore it up in front of them.`],['crew',`Remember '08? You kept every one of us when the other yards were laying off. Nobody here forgets that.`]]}:
+   {lines:[['narr',`A recruiter from Northline Building Supply set up in the yard's parking lot, handing out business cards. Twenty percent raises, signing bonuses.`],['crew',`Two of the yard guys took the cards. I don't think they're coming back Monday.`]],
+   q:'Do you fight for them?',ch:[['Counter with raises for everyone','sec',()=>{S.staff.forEach(s=>{if(!s.founder)s.salary=Math.round(s.salary*1.05/100)*100});setFl('poach','raise')},'+5% pay across the board'],['Let them go','bad',()=>{const g=S.staff.filter(s=>!s.founder&&!s.comp&&!s.mgr).slice(-2);S.staff=S.staff.filter(s=>!g.includes(s));setFl('poach','lose')},'Two people walk']]}}},
+  barbecue:{must:1,at:40,s:()=>({lines:[['narr',`Walt didn't come to the summer barbecue. In twenty years, he'd never missed one.`],['narr',`${fN()} called his house that night. His daughter picked up.`],['narr',`"He's fine," she said. "He's just tired. He's been tired a lot lately."`]]})}},
+ legacy:{
+  key:{must:1,at:10,s:()=>({lines:[['narr',`Walt's daughter called on a Sunday morning. Pneumonia. "He keeps asking for you."`],['walt',`There you are. Took you long enough. Hand me my coat.`],['narr',`From the inside pocket he pulled out an old brass key on a loop of fence wire. It was stamped <b>KESSLER — GATE</b>.`],['walt',`Ray gave me this the day he lost the yard. Said, "Give it to whoever deserves the lot." Took me twenty-some years to find 'em.`],['me',`Walt…`],['walt',`Don't. Go run your yard. I'll be fine.`]]})},
+  next:{must:1,at:40,s:()=>({lines:[['narr',`The key hung on a nail above ${fN()}'s desk now. Some nights, after everyone else had gone, it was the only thing in the office that caught the light.`],['narr',`One question had started showing up uninvited: when the day came, who would hold it next?`]],
+   q:'Who runs the yard after you?',ch:[['Train someone from the crew','good',()=>{S.staff.forEach(s=>moraleAdd(s,10));integ(4);setFl('next','crew')},'Everyone +10 morale · Integrity +4'],['Make it employee-owned','good',()=>{S.staff.forEach(s=>moraleAdd(s,15));spend(250e3);setFl('next','esop')},'−$250K to set it up · everyone +15 morale'],['Sell to Northline when the time comes','sec',()=>{earn(400e3,'oth');integ(-4);setFl('next','sell')},'+$400K signing bonus · Integrity −4']]})}}};
+// cliffhanger after each chapter, whatever the ending
+const HOOK={gate:()=>`That night, locking up, ${fN()} noticed a dark pickup idling across the street. When the yard lights came on, it pulled away.`,
+ word:()=>`The next morning, a contractor called to cancel a $30,000 order. He wouldn't say why.`,
+ room:()=>`On the last day at the old lot, a black pickup with <b>${rivN()}</b> on the door parked across the street for an hour. Nobody got out.`,
+ rival:null,
+ crash:()=>`In the spring, a man in a pressed shirt from Northline Building Supply walked the yard, taking photos. He said he was "just admiring the operation."`,
+ rebuild:()=>`Gus called on New Year's Eve. "Something's off at the mills. I can't say more. Stock up while you can."`,
+ lumber:()=>`Through all of it, there was one person ${fN()} kept meaning to call, and kept putting off.`};
+CH.forEach(C=>{const o=C.outro;C.outro=function(){const L=o.apply(this,arguments);const h=HOOK[C.k];return h?L.concat([['narr',`<i>${h()}</i>`]]):L}});
+// Walt's final scene ties off the mystery in the legacy outro
+{const L=CH.find(c=>c.k==='legacy');if(L){const o=L.outro;L.outro=function(){const n=fl('next');return [['narr',`Walt Brenner died in his sleep that winter, eighty-one years old. Half the contractors in the valley came to the service. ${rivB()} sat in the back row.`]].concat(o.apply(this,arguments)).concat(n==='esop'?[['narr',`The papers were signed the next spring. ${coN()} belonged to everyone who worked there now. The brass key stayed on its nail.`]]:n==='sell'?[['narr',`Northline's lawyers asked about the old brass key during the walkthrough. ${fN()} said it wasn't part of the sale.`]]:[['narr',`One day, a long time from now, someone from the crew will take that brass key off its nail. ${fN()} already knows who.`]])}}}
+// make the old interludes, the new mystery beats and money that comes in later all run from one place
+const _bwOld=beatsWeek;
+beatsWeek=function(){if(!S||!S.founder)return;const T=ST();
+ (T.later||[]).slice().forEach(x=>{if(S.week>=x.w){earn(x.amt,'oth');news('💰 '+x.t+': +'+$m(x.amt));T.later=T.later.filter(y=>y!==x)}});
+ if(!T.active||MQ.length||(typeof MG!=='undefined'&&MG))return;if(beat3(false))return;_bwOld()};
+function beat3(force){const T=ST(),C=CH[T.ch];if(!C)return false;const B=B3[C.k];if(!B)return false;T.bf=T.bf||{};const age=S.week-T.st;
+ for(const [k,b] of Object.entries(B)){const id='3:'+C.k+':'+k;if(T.bf[id])continue;if(b.if&&!b.if()){if(age>=b.at)T.bf[id]=1;continue}
+  if(age>=b.at||(force&&b.must)){T.bf[id]=1;const sc=b.s();modal(`📖 Story: ${C.n}`,`<div class="chapter">${dateStr(S.week)}</div>${scene(sc.lines)}${sc.q?`<p style="margin:12px 0 0"><b>${esc(sc.q)}</b></p>`:''}`,sc.ch?sc.ch.map(([t,c,f,h])=>choice(t,c,f,h)):[{t:'Continue'}]);return true}}
+ return false}
+// a chapter can't end before its key story moments have played
+{const _seS3=stEnd;stEnd=function(){if(beat3(true))return;return _seS3.apply(this,arguments)}}
+{const _scS3=stClose;stClose=function(n){const T=ST(),C=CH[T.ch];const B=C&&B3[C.k];if(B){T.bf=T.bf||{};const miss=Object.entries(B).find(([k,b])=>b.must&&!T.bf['3:'+C.k+':'+k]&&(!b.if||b.if()));if(miss&&!MQ.length){beat3(true);return}}return _scS3(n)}}
+
+/* ===== P40: realistic product art — 2D product pictures and 3D yard stock ===== */
+// ---------- 2D: small illustrated product pictures ----------
+const PA_G=`<defs><linearGradient id="paGalv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e3e8ec"/><stop offset=".5" stop-color="#a9b3bb"/><stop offset="1" stop-color="#7d8790"/></linearGradient>
+<linearGradient id="paCedar" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#b8743f"/><stop offset=".5" stop-color="#d79a62"/><stop offset="1" stop-color="#b06c38"/></linearGradient>
+<linearGradient id="paPT" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#a9a26a"/><stop offset=".5" stop-color="#c8c08a"/><stop offset="1" stop-color="#9c955e"/></linearGradient>
+<linearGradient id="paBlk" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#121212"/><stop offset=".5" stop-color="#3a3a3a"/><stop offset="1" stop-color="#111"/></linearGradient>
+<pattern id="paDia" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="none" stroke="#c9d1d7" stroke-width=".9"/></pattern>
+<pattern id="paDiaK" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="none" stroke="#1f2a22" stroke-width="1.1"/></pattern>
+<pattern id="paSq" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="4" height="4" fill="none" stroke="#b9c2c8" stroke-width=".7"/></pattern>
+<pattern id="paAc" width="2.4" height="7" patternUnits="userSpaceOnUse"><rect width="2.4" height="7" fill="none" stroke="#7d8790" stroke-width=".55"/></pattern></defs>`;
+const PA={
+ chain:`<ellipse cx="34" cy="24" rx="7" ry="15" fill="#6d777f"/><rect x="10" y="9" width="24" height="30" fill="#7e8890"/><rect x="10" y="9" width="24" height="30" fill="url(#paDia)"/><ellipse cx="10" cy="24" rx="7" ry="15" fill="#9aa4ab"/><ellipse cx="10" cy="24" rx="7" ry="15" fill="url(#paDia)"/><ellipse cx="10" cy="24" rx="2.6" ry="5.5" fill="#4a5258"/>`,
+ wood:`${[6,16,26,36].map(x=>`<path d="M${x} 44V12l3.5-4 3.5 4v32z" fill="url(#paCedar)" stroke="#8a4f26" stroke-width=".6"/><path d="M${x+2} 16v24M${x+5} 20v20" stroke="#9a5a2c" stroke-width=".4" opacity=".7"/>`).join('')}<rect x="3" y="18" width="42" height="3" fill="#a7652f"/><rect x="3" y="34" width="42" height="3" fill="#a7652f"/>`,
+ vinyl:`<rect x="4" y="8" width="7" height="36" fill="#f7f6f0" stroke="#c9c6bb"/><rect x="3" y="6" width="9" height="3" rx="1" fill="#fff" stroke="#c9c6bb"/><rect x="11" y="11" width="33" height="31" fill="#fbfaf5" stroke="#cfccc1"/>${[17,23,29,35,41].map(x=>`<path d="M${x} 11v31" stroke="#dcd8cc" stroke-width=".8"/>`).join('')}<rect x="11" y="11" width="33" height="3" fill="#eeebe2"/>`,
+ ag:`<path d="M8 6v38" stroke="#2f5d3a" stroke-width="3"/><path d="M6 10h4" stroke="#2f5d3a" stroke-width="2"/>${[12,18,23,27,31,34,37,40].map(y=>`<path d="M8 ${y}H46" stroke="#a9b3bb" stroke-width=".9"/>`).join('')}${[14,20,26,32,38,44].map(x=>`<path d="M${x} 12V40" stroke="#a9b3bb" stroke-width=".9"/>`).join('')}<path d="M8 8l4-1 4 1 4-1 4 1 4-1 4 1 4-1 4 1 4-1" stroke="#7d8790" fill="none" stroke-width=".8"/>`,
+ orn:`<rect x="4" y="13" width="40" height="2.4" fill="url(#paBlk)"/><rect x="4" y="36" width="40" height="2.4" fill="url(#paBlk)"/>${[8,13,18,23,28,33,38].map(x=>`<rect x="${x}" y="9" width="1.8" height="35" fill="#1b1b1b"/><path d="M${x-.6} 9.5l1.5-3 1.5 3z" fill="#1b1b1b"/>`).join('')}<rect x="2" y="7" width="3" height="37" fill="#111"/><rect x="43" y="7" width="3" height="37" fill="#111"/>`,
+ deck:`${[0,1,2].map(r=>[0,1,2,3].map(c=>`<rect x="${6+c*9.5}" y="${30-r*7}" width="9" height="6" fill="url(#paPT)" stroke="#7c7646" stroke-width=".5"/><circle cx="${10.5+c*9.5}" cy="${33-r*7}" r="1.6" fill="none" stroke="#867f4c" stroke-width=".4"/>`).join('')).join('')}<path d="M6 16l6-6h33l-6 6z" fill="#b8b07a" stroke="#7c7646" stroke-width=".5"/><path d="M45 10v29l-6 6V16z" fill="#9a935e"/><rect x="4" y="43" width="42" height="3" fill="#6b5a40"/>`,
+ comp:`${[0,1,2].map(i=>`<path d="M4 ${14+i*10}h34l6-4H10z" fill="#9b7b5f"/><rect x="4" y="${14+i*10}" width="34" height="6" fill="#86684d"/><path d="M4 ${16.5+i*10}h34" stroke="#6b5139" stroke-width=".8"/><path d="M38 ${14+i*10}l6-4v6l-6 4z" fill="#6f553f"/><path d="M38 ${16.5+i*10}l6-4" stroke="#4e3a28" stroke-width=".8"/>`).join('')}`,
+ rail:`<rect x="5" y="8" width="5" height="36" fill="#2a2a2a"/><rect x="38" y="8" width="5" height="36" fill="#2a2a2a"/><rect x="4" y="6" width="7" height="3" fill="#1b1b1b"/><rect x="37" y="6" width="7" height="3" fill="#1b1b1b"/><rect x="10" y="11" width="28" height="3" fill="#333"/><rect x="10" y="38" width="28" height="2.5" fill="#333"/>${[13,17,21,25,29,33].map(x=>`<rect x="${x}" y="14" width="1.6" height="24" fill="#444"/>`).join('')}`,
+ gate:`<rect x="3" y="4" width="4" height="40" fill="url(#paGalv)"/><rect x="10" y="9" width="34" height="32" fill="none" stroke="#9aa4ab" stroke-width="2.2"/><rect x="11" y="10" width="32" height="30" fill="url(#paDia)"/><path d="M27 9v32" stroke="#9aa4ab" stroke-width="1.6"/><rect x="6" y="13" width="6" height="2.4" fill="#5a6068"/><rect x="6" y="33" width="6" height="2.4" fill="#5a6068"/><path d="M42 23h4" stroke="#5a6068" stroke-width="2"/>`,
+ hw:`<circle cx="16" cy="18" r="9" fill="none" stroke="url(#paGalv)" stroke-width="3.2"/><rect x="23" y="15" width="6" height="6" fill="#9aa4ab"/><rect x="28" y="16.5" width="14" height="3" fill="#b9c2c8"/><path d="M30 16.5v3M33 16.5v3M36 16.5v3M39 16.5v3" stroke="#7d8790" stroke-width=".6"/><path d="M8 34h22" stroke="#aab3ba" stroke-width="3.5" stroke-linecap="round"/><circle cx="33" cy="34" r="4" fill="#8e979e"/><rect x="31" y="32.5" width="4" height="3" fill="#6a737a"/>`,
+ pvcdeck:`${[0,1,2].map(i=>`<path d="M4 ${14+i*10}h34l6-4H10z" fill="#e1ded6"/><rect x="4" y="${14+i*10}" width="34" height="6" fill="#cfcbc1"/><path d="M38 ${14+i*10}l6-4v6l-6 4z" fill="#bdb8ad"/><path d="M8 ${12+i*10}h28" stroke="#c9c4b9" stroke-width=".5"/>`).join('')}`,
+ sec:`<rect x="4" y="14" width="40" height="30" fill="#2c3036"/><rect x="4" y="14" width="40" height="30" fill="url(#paAc)"/><path d="M4 14V6M44 14V6" stroke="#3a3f46" stroke-width="2.5"/>${[0,1,2,3,4,5,6].map(i=>`<circle cx="${7+i*5.6}" cy="8.5" r="3.2" fill="none" stroke="#b9c2c8" stroke-width=".9"/>`).join('')}`,
+ concrete:`<path d="M10 8h28l3 4v30l-3 2H10l-3-2V12z" fill="#e7e2d6" stroke="#b9b2a2"/><rect x="11" y="14" width="26" height="9" fill="#c8102e"/><text x="24" y="21" font-size="5.4" font-weight="900" fill="#fff" text-anchor="middle" font-family="Arial">POST MIX</text><rect x="11" y="25" width="26" height="3" fill="#2b2b2b"/><text x="24" y="37" font-size="7" font-weight="800" fill="#555" text-anchor="middle" font-family="Arial">50 LB</text>`,
+ pipe:`<rect x="3" y="36" width="42" height="4" fill="#6b5a40"/>${[[10,30],[20,30],[30,30],[40,30],[15,21],[25,21],[35,21],[20,12],[30,12]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="5" fill="url(#paGalv)" stroke="#6d777f" stroke-width=".6"/><circle cx="${x}" cy="${y}" r="3.4" fill="#4a5258"/>`).join('')}`,
+ welded:`<ellipse cx="34" cy="24" rx="7" ry="15" fill="#5f6b63"/><rect x="10" y="9" width="24" height="30" fill="#6c7a70"/><rect x="10" y="9" width="24" height="30" fill="url(#paSq)"/><ellipse cx="10" cy="24" rx="7" ry="15" fill="#86948a"/><ellipse cx="10" cy="24" rx="7" ry="15" fill="url(#paSq)"/><ellipse cx="10" cy="24" rx="2.6" ry="5.5" fill="#3e4741"/>`,
+ slats:`<rect x="4" y="6" width="40" height="38" fill="#7e8890"/><rect x="4" y="6" width="40" height="38" fill="url(#paDia)"/>${[8,14,20,26,32,38].map(x=>`<rect x="${x}" y="6" width="3.6" height="38" fill="#2f6b4f"/>`).join('')}<rect x="2" y="4" width="44" height="2.5" fill="url(#paGalv)"/>`,
+ temp:`<rect x="6" y="8" width="36" height="28" fill="none" stroke="#c9d1d7" stroke-width="2"/><rect x="7" y="9" width="34" height="26" fill="url(#paSq)"/><rect x="2" y="36" width="12" height="5" fill="#2f6fb0"/><rect x="34" y="36" width="12" height="5" fill="#2f6fb0"/><path d="M8 36v4M40 36v4" stroke="#9aa4ab" stroke-width="2"/>`,
+ compfence:`<rect x="4" y="6" width="5" height="38" fill="#3a3530"/><rect x="39" y="6" width="5" height="38" fill="#3a3530"/>${[0,1,2,3,4,5].map(i=>`<rect x="9" y="${8+i*6}" width="30" height="5.4" fill="${i%2?'#6e6155':'#7a6c5f'}"/><path d="M11 ${10+i*6}h26" stroke="#5b4f44" stroke-width=".4"/>`).join('')}`,
+ framing:`<rect x="4" y="26" width="40" height="8" fill="url(#paPT)" stroke="#7c7646" stroke-width=".5"/><rect x="20" y="10" width="8" height="34" fill="url(#paPT)" stroke="#7c7646" stroke-width=".5"/><path d="M17 22h14v14H17z" fill="none" stroke="url(#paGalv)" stroke-width="2.2"/>${[19,23,27,31].map(x=>`<circle cx="${x-1}" cy="24" r=".8" fill="#5a6068"/>`).join('')}`,
+ lighting:`<circle cx="24" cy="17" r="13" fill="#ffd873" opacity=".16"/><rect x="18.5" y="18" width="11" height="27" fill="#8a6748"/><path d="M20 22v20M27 21v21" stroke="#6d5038" stroke-width=".5"/><rect x="15.5" y="11" width="17" height="4" rx="1" fill="#2b2b2b"/><rect x="17" y="15" width="14" height="3" fill="#ffe08a"/><path d="M15 19l4 4M33 19l-4 4" stroke="#ffd873" stroke-width="1.1" opacity=".75"/><rect x="14" y="44" width="20" height="2" fill="#5a4a38"/>`,
+ pergola:`<rect x="8" y="16" width="4" height="28" fill="#8a5a36"/><rect x="36" y="16" width="4" height="28" fill="#8a5a36"/><rect x="4" y="13" width="40" height="4" fill="#9b6a42"/>${[6,12,18,24,30,36,42].map(x=>`<rect x="${x-1}" y="8" width="2.6" height="7" fill="#a8744a"/>`).join('')}<rect x="3" y="7" width="42" height="2.2" fill="#8a5a36"/>`,
+ sport:`<path d="M6 44V14q18-12 36 0v30" fill="#2f4d38"/><path d="M6 44V14q18-12 36 0v30" fill="url(#paDiaK)"/><path d="M6 44V14q18-12 36 0v30" fill="none" stroke="#9aa4ab" stroke-width="2"/><path d="M24 6v38" stroke="#9aa4ab" stroke-width="1.6"/>`,
+ bollard:`<rect x="16" y="10" width="16" height="34" rx="2" fill="#f2b51c"/><ellipse cx="24" cy="10" rx="8" ry="3" fill="#f7c84a"/>${[18,26].map(y=>`<rect x="16" y="${y}" width="16" height="3" fill="#2b2b2b"/>`).join('')}<rect x="12" y="43" width="24" height="3" fill="#888"/>`,
+ steelframe:`${[0,1,2].map(i=>{const y=12+i*11;return `<path d="M6 ${y}h28l8-6H14z" fill="#d3d9dd"/><rect x="6" y="${y}" width="28" height="8" fill="url(#paGalv)"/><path d="M34 ${y}l8-6v8l-8 6z" fill="#7d878e"/><path d="M34.6 ${y+7.4}h5v-1.4h-3.6v-5.2h3.6V${y}h-5z" fill="#4a5258"/>`}).join('')}<rect x="3" y="44" width="42" height="2.5" fill="#6b5a40"/>`,
+ lpsiding:`${[0,1,2,3,4].map(i=>`<path d="M4 ${8+i*7.4}h40v7H4z" fill="${i%2?'#d2bf98':'#dcc9a3'}"/><path d="M4 ${15+i*7.4}h40" stroke="#a8936a" stroke-width="1.1"/><path d="M7 ${10.5+i*7.4}c6 1 10-1 16 0s10 1 18 0" stroke="#c4ae84" stroke-width=".5" fill="none"/>`).join('')}<rect x="38" y="8" width="6" height="37" fill="#e6d8bb" stroke="#b9a57e" stroke-width=".5"/>`,
+ pfsiding:`${[0,1,2,3,4].map(i=>`<path d="M4 ${8+i*7.4}h34v7H4z" fill="${i%2?'#566a76':'#5f7380'}"/><path d="M4 ${15+i*7.4}h34" stroke="#3e4e57" stroke-width="1.1"/>`).join('')}<rect x="38" y="8" width="6" height="37" fill="#f3f1ea"/><rect x="40" y="38" width="7" height="8" rx="1" fill="#b23a2e" stroke="#fff" stroke-width=".6"/><rect x="42" y="34" width="5" height="6" rx="1" fill="#e2b03a" stroke="#fff" stroke-width=".6"/>`};
+function prodArt(k,sz){const s=sz||34;const a=PA[k];if(!a){const L=LN(k);return L?L.ic:''}return `<svg class="parts" viewBox="0 0 48 48" width="${s}" height="${s}" style="vertical-align:middle;flex:none;border-radius:8px;background:linear-gradient(160deg,#25443a,#18302a);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)">${PA_G}${a}</svg>`}
+
+// ---------- 3D: textured, product-specific yard stock ----------
+const P3M={};
+function p3Mat(key,draw,opt){if(P3M[key])return P3M[key];const tex=ctex('p3_'+key,opt&&opt.w||256,opt&&opt.h||128,draw);try{if(opt&&opt.rep&&tex.wrapS!=null){tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat&&tex.repeat.set(opt.rep[0],opt.rep[1])}}catch(e){}
+ const m=new THREE.MeshStandardMaterial(Object.assign({map:tex,roughness:0.85,metalness:0},opt&&opt.m||{}));P3M[key]=m;return m}
+const grainSide=(base,dark,board)=>(c,w,h)=>{c.fillStyle=base;c.fillRect(0,0,w,h);const n=board||6;for(let i=0;i<n;i++){const y0=i*h/n;for(let g=0;g<7;g++){c.strokeStyle=`rgba(${dark},${0.12+Math.random()*0.15})`;c.lineWidth=0.6+Math.random();c.beginPath();const y=y0+3+Math.random()*(h/n-6);c.moveTo(0,y);for(let x=0;x<=w;x+=32)c.lineTo(x,y+Math.sin(x/40+g)*1.5);c.stroke()}c.fillStyle=`rgba(${dark},.55)`;c.fillRect(0,y0,w,1.6)}};
+const grainEnd=(base,ring)=>(c,w,h)=>{c.fillStyle='#3b2a1a';c.fillRect(0,0,w,h);const cols=6,rows=4,bw=w/cols,bh=h/rows;for(let r=0;r<rows;r++)for(let q=0;q<cols;q++){const x=q*bw+1,y=r*bh+1;c.fillStyle=base;c.fillRect(x,y,bw-2,bh-2);c.strokeStyle=ring;c.lineWidth=0.8;for(let k=1;k<5;k++){c.beginPath();c.arc(x+bw*0.5+(q%2?6:-6),y+bh*1.1,k*bh*0.28,Math.PI*1.1,Math.PI*1.9);c.stroke()}}};
+const steelSide=(c,w,h)=>{const g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,'#d7dde1');g.addColorStop(.5,'#a7b0b7');g.addColorStop(1,'#8c959c');c.fillStyle=g;c.fillRect(0,0,w,h);for(let i=0;i<260;i++){c.fillStyle=`rgba(255,255,255,${Math.random()*0.18})`;c.fillRect(Math.random()*w,Math.random()*h,6+Math.random()*10,2+Math.random()*4)}for(let i=1;i<5;i++){c.fillStyle='rgba(60,68,74,.6)';c.fillRect(0,i*h/5,w,1.5)}};
+const cEnd=(c,w,h)=>{c.fillStyle='#3c4348';c.fillRect(0,0,w,h);const cols=4,rows=5,bw=w/cols,bh=h/rows;c.strokeStyle='#c8d0d5';c.lineWidth=4;for(let r=0;r<rows;r++)for(let q=0;q<cols;q++){const x=q*bw+bw*0.25,y=r*bh+bh*0.15;c.beginPath();c.moveTo(x+bw*0.5,y);c.lineTo(x,y);c.lineTo(x,y+bh*0.7);c.lineTo(x+bw*0.5,y+bh*0.7);c.stroke()}};
+const pipeEnd=(c,w,h)=>{c.fillStyle='#2a2f33';c.fillRect(0,0,w,h);const n=6,r=w/n/2;for(let row=0;row<3;row++)for(let i=0;i<n;i++){const x=r+i*2*r+(row%2?r:0),y=h-r-row*r*1.72;if(x>w-r+1)continue;c.fillStyle='#aab3ba';c.beginPath();c.arc(x,y,r*0.95,0,7);c.fill();c.fillStyle='#30363a';c.beginPath();c.arc(x,y,r*0.68,0,7);c.fill()}};
+const meshTex=(bg,line,sq)=>(c,w,h)=>{c.fillStyle=bg;c.fillRect(0,0,w,h);c.strokeStyle=line;c.lineWidth=2;const s=16;if(sq){for(let x=0;x<=w;x+=s){c.beginPath();c.moveTo(x,0);c.lineTo(x,h);c.stroke()}for(let y=0;y<=h;y+=s){c.beginPath();c.moveTo(0,y);c.lineTo(w,y);c.stroke()}}else for(let x=-h;x<=w+h;x+=s){c.beginPath();c.moveTo(x,0);c.lineTo(x+h,h);c.stroke();c.beginPath();c.moveTo(x+h,0);c.lineTo(x,h);c.stroke()}};
+const sidingSide=(base,shadow,label,lc)=>(c,w,h)=>{c.fillStyle=base;c.fillRect(0,0,w,h);const n=6;for(let i=0;i<n;i++){const y=i*h/n;c.fillStyle=shadow;c.fillRect(0,y,w,2);for(let g=0;g<4;g++){c.strokeStyle='rgba(0,0,0,.06)';c.beginPath();const yy=y+4+Math.random()*(h/n-6);c.moveTo(0,yy);for(let x=0;x<=w;x+=24)c.lineTo(x,yy+Math.sin(x/30+g)*1.2);c.stroke()}}
+ if(label){c.fillStyle=lc||'#2d6aa0';c.fillRect(w*0.3,0,w*0.16,h);c.fillStyle='#fff';c.font='900 14px Arial';c.save();c.translate(w*0.38,h/2);c.rotate(-Math.PI/2);c.textAlign='center';c.fillText(label,0,5);c.restore()}};
+const bagTex=(col,txt)=>(c,w,h)=>{c.fillStyle='#e8e2d4';c.fillRect(0,0,w,h);const n=4;for(let i=0;i<n;i++){const y=i*h/n;c.fillStyle='#d8d1c0';c.fillRect(0,y,w,2);for(let q=0;q<3;q++){const x=q*w/3;c.fillStyle=col;c.fillRect(x+8,y+5,w/3-16,h/n*0.45);c.fillStyle='#fff';c.font=`900 ${Math.floor(h/n*0.28)}px Arial`;c.textAlign='center';c.fillText(txt,x+w/6,y+h/n*0.38)}}};
+const cartonTex=(txt,col)=>(c,w,h)=>{c.fillStyle='#b98c58';c.fillRect(0,0,w,h);c.fillStyle='rgba(0,0,0,.08)';for(let i=0;i<40;i++)c.fillRect(Math.random()*w,Math.random()*h,30,1);c.fillStyle=col||'#1f4e3d';c.fillRect(w*0.1,h*0.3,w*0.8,h*0.4);c.fillStyle='#fff';c.font=`900 ${Math.floor(h*0.2)}px Arial`;c.textAlign='center';c.fillText(txt,w/2,h*0.57);c.fillStyle='#d9b77e';c.fillRect(0,h*0.47,w,4)};
+const wrapTex=(base,txt,col)=>(c,w,h)=>{c.fillStyle=base;c.fillRect(0,0,w,h);for(let i=0;i<6;i++){c.fillStyle='rgba(0,0,0,.25)';c.fillRect(0,i*h/6,w,1.5)}c.fillStyle='rgba(255,255,255,.18)';c.fillRect(0,0,w,h*0.15);c.fillStyle=col;c.fillRect(w*0.55,0,w*0.22,h);c.fillStyle='#fff';c.font='900 13px Arial';c.save();c.translate(w*0.66,h/2);c.rotate(-Math.PI/2);c.textAlign='center';c.fillText(txt,0,5);c.restore()};
+// a box with its own material on each face: [+x,-x,+y,-y,+z,-z]
+function bxM(room,w,h,d,mats,x,y,z){const m=bx(room,w,h,d,'#999',x,y,z);try{m.material=mats}catch(e){}return m}
+function lumBay(room,k,f,x,z,W,D,sideM,endM,topM,strap){const n=Math.ceil(f*8);const dun=(xx)=>bx(room,0.12,0.08,D,'#6e5232',xx,0.04,z);[-W*0.32,W*0.32].forEach(dx=>dun(x+dx));let topY=0.1;
+ for(let i=0;i<n;i++){const lv=Math.floor(i/2),sd=i%2,by=0.08+lv*0.34+0.16,bz=z+(sd?D/4:-D/4);bxM(room,W,0.3,D/2-0.08,[endM,endM,topM,topM,sideM,sideM],x,by,bz);
+  if(strap)[-W*0.3,W*0.3].forEach(dx=>bx(room,0.03,0.31,D/2-0.06,strap,x+dx,by,bz));if(lv>0)[-W*0.32,W*0.32].forEach(dx=>bx(room,0.1,0.03,D/2-0.08,'#8a6a40',x+dx,by-0.165,bz));topY=by+0.15}return topY}
+function rollBay(room,f,x,z,W,D,mat,core,upright){const n=Math.ceil(f*12);bx(room,W*0.8,0.1,D,'#7a5a36',x,0.05,z);let topY=0.1;
+ for(let i=0;i<n;i++){const lv=Math.floor(i/6),j=i%6,col=j%3,row=Math.floor(j/3);const r=0.2,y=0.1+r+lv*r*1.85;const m=cyl(room,r,r,0.62,'#9aa4ab',x-W*0.26+col*W*0.26,y,z-D/4+row*D/2,{},16);try{m.material=mat}catch(e){}m.rotation.x=Math.PI/2;
+  const c2=cyl(room,r*0.3,r*0.3,0.64,core,m.position.x,y,m.position.z,{},10);c2.rotation.x=Math.PI/2;topY=y+r}return topY}
+function pY(k,f,x,z,W,D,room){const L=LN(k);const C=(YCOL&&YCOL[k])||'#999';let top=null;
+ switch(k){
+  case 'wood':case 'pergola':top=lumBay(room,k,f,x,z,W,D,p3Mat('cedarS',grainSide('#c88a52','110,60,25')),p3Mat('cedarE',grainEnd('#d59c66','rgba(120,70,30,.6)')),p3Mat('cedarT',grainSide('#cf935b','110,60,25',3)),'#2b2b2b');break;
+  case 'deck':case 'framing':top=lumBay(room,k,f,x,z,W,D,p3Mat('ptS',grainSide('#b5ad74','90,90,40')),p3Mat('ptE',grainEnd('#c2ba82','rgba(100,96,50,.6)')),p3Mat('ptT',grainSide('#bbb37a','90,90,40',3)),'#2b2b2b');break;
+  case 'comp':case 'compfence':top=lumBay(room,k,f,x,z,W,D,p3Mat('cmpS',wrapTex('#7d6552','COMPOSITE','#b0302a')),p3Mat('cmpE',(c,w,h)=>{c.fillStyle='#3a2c22';c.fillRect(0,0,w,h);for(let r=0;r<6;r++)for(let q=0;q<4;q++){c.fillStyle='#8a6e57';c.fillRect(q*w/4+3,r*h/6+3,w/4-6,h/6-6);c.fillStyle='#5a4535';c.fillRect(q*w/4+3,r*h/6+h/12-2,6,4);c.fillRect(q*w/4+w/4-9,r*h/6+h/12-2,6,4)}}),p3Mat('cmpT',grainSide('#86695a','60,40,30',4)),null);break;
+  case 'pvcdeck':top=lumBay(room,k,f,x,z,W,D,p3Mat('pvcS',wrapTex('#dcd7cc','PVC DECK','#2d6aa0')),p3Mat('pvcE',(c,w,h)=>{c.fillStyle='#9e998e';c.fillRect(0,0,w,h);for(let r=0;r<6;r++)for(let q=0;q<4;q++){c.fillStyle='#ece8df';c.fillRect(q*w/4+3,r*h/6+3,w/4-6,h/6-6)}}),p3Mat('pvcT',grainSide('#e3dfd5','150,140,120',4)),null);break;
+  case 'steelframe':top=lumBay(room,k,f,x,z,W,D,p3Mat('stS',steelSide,{m:{metalness:0.55,roughness:0.4}}),p3Mat('stE',cEnd,{m:{metalness:0.4,roughness:0.5}}),p3Mat('stT',steelSide,{m:{metalness:0.55,roughness:0.4}}),'#1f4e8a');break;
+  case 'lpsiding':top=lumBay(room,k,f*0.8,x,z,W,D,p3Mat('lpS',sidingSide('#d9c7a1','rgba(120,95,55,.55)','LAP SIDING','#1d5aa0')),p3Mat('lpE',(c,w,h)=>{c.fillStyle='#6b5536';c.fillRect(0,0,w,h);for(let r=0;r<10;r++)for(let q=0;q<3;q++){c.fillStyle='#cdb68a';c.fillRect(q*w/3+3,r*h/10+2,w/3-6,h/10-5)}}),p3Mat('lpT',sidingSide('#dccba7','rgba(120,95,55,.45)')),'#2b2b2b');break;
+  case 'pfsiding':top=lumBay(room,k,f*0.8,x,z,W,D,p3Mat('pfS',(c,w,h)=>{c.fillStyle='#e9e4d6';c.fillRect(0,0,w,h);c.fillStyle='#d6cfbd';for(let i=0;i<5;i++)c.fillRect(0,i*h/5,w,2);c.fillStyle='#5d707c';c.fillRect(w*0.08,h*0.25,w*0.2,h*0.5);c.fillStyle='#8a3a2e';c.fillRect(w*0.3,h*0.25,w*0.06,h*0.5);c.fillStyle='#d9a93a';c.fillRect(w*0.38,h*0.25,w*0.06,h*0.5);c.fillStyle='#333';c.font='900 16px Arial';c.fillText('PREFINISHED',w*0.5,h*0.58)}),p3Mat('pfE',(c,w,h)=>{c.fillStyle='#e9e4d6';c.fillRect(0,0,w,h);for(let r=0;r<10;r++)for(let q=0;q<3;q++){c.fillStyle='#5d707c';c.fillRect(q*w/3+3,r*h/10+2,w/3-6,h/10-5)}}),p3Mat('pfT',(c,w,h)=>{c.fillStyle='#ece7da';c.fillRect(0,0,w,h);c.fillStyle='#d9d2c1';for(let i=0;i<4;i++)c.fillRect(0,i*h/4,w,2)}),'#2b2b2b');break;
+  case 'chain':case 'slats':top=rollBay(room,f,x,z,W,D,p3Mat(k==='slats'?'slR':'clR',k==='slats'?(c,w,h)=>{meshTex('#8a949b','#d3dadf')(c,w,h);for(let x=0;x<w;x+=22){c.fillStyle='#2f6b4f';c.fillRect(x,0,10,h)}}:meshTex('#6f7a82','#d3dadf'),{rep:[3,1],m:{metalness:0.5,roughness:0.45}}),'#4a5258');break;
+  case 'ag':case 'welded':top=rollBay(room,f,x,z,W,D,p3Mat(k+'R',meshTex(k==='ag'?'#55605a':'#5b6860','#cdd5d9',true),{rep:[3,1],m:{metalness:0.45,roughness:0.5}}),'#3a4238');break;
+  case 'sport':top=rollBay(room,f,x,z,W,D,p3Mat('spR',meshTex('#244b33','#3e7a52'),{rep:[3,1]}),'#1c3324');break;
+  case 'pipe':case 'rail':case 'sec':case 'orn':{const n=Math.ceil(f*4);[-W*0.33,0,W*0.33].forEach(dx=>bx(room,0.12,0.08,D,'#6e5232',x+dx,0.04,z));let tY=0.1;const side=k==='pipe'||k==='sec'?p3Mat('pipeS',steelSide,{m:{metalness:0.55,roughness:0.4}}):p3Mat('blkS',(c,w,h)=>{c.fillStyle='#1b1b1b';c.fillRect(0,0,w,h);for(let i=0;i<8;i++){c.fillStyle='rgba(255,255,255,.12)';c.fillRect(0,i*h/8+2,w,2)}},{m:{metalness:0.3,roughness:0.5}});
+   const end=k==='pipe'||k==='sec'?p3Mat('pipeE',pipeEnd):p3Mat('blkE',(c,w,h)=>{c.fillStyle='#0d0d0d';c.fillRect(0,0,w,h);for(let r=0;r<4;r++)for(let q=0;q<6;q++){c.strokeStyle='#4a4a4a';c.lineWidth=3;c.strokeRect(q*w/6+6,r*h/4+6,w/6-12,h/4-12)}});
+   for(let b=0;b<n;b++){const bz=z+((b%2)?D/4:-D/4),lv=Math.floor(b/2),by=0.1+lv*0.28+0.13;bxM(room,W,0.26,D/2-0.12,[end,end,side,side,side,side],x,by,bz);[-W*0.3,W*0.3].forEach(dx=>bx(room,0.03,0.27,D/2-0.1,'#1f4e8a',x+dx,by,bz));tY=by+0.13}top=tY;break}
+  case 'bollard':{const n=Math.ceil(f*6);bx(room,W*0.8,0.1,D,'#7a5a36',x,0.05,z);for(let i=0;i<n;i++){const px=x-W*0.3+(i%3)*W*0.3,pz=z+(i<3?-D/4:D/4);const b=cyl(room,0.11,0.11,0.9,'#f2b51c',px,0.55,pz,{roughness:0.5},12);[0.75,0.45].forEach(yy=>cyl(room,0.112,0.112,0.06,'#222',px,yy,pz,{},12))}top=1.0;break}
+  case 'vinyl':case 'gate':{const n=Math.ceil(f*8);let tY=0.1;const sideM=k==='vinyl'?p3Mat('vnS',wrapTex('#f4f2ea','VINYL FENCE','#2d6aa0')):p3Mat('gtS',meshTex('#5f6970','#cfd6db'),{m:{metalness:0.45,roughness:0.5}});const topM=k==='vinyl'?p3Mat('vnT',(c,w,h)=>{c.fillStyle='#f6f5ef';c.fillRect(0,0,w,h);for(let i=1;i<8;i++){c.fillStyle='#dedad0';c.fillRect(i*w/8,0,2,h)}}):p3Mat('gtT',meshTex('#5f6970','#cfd6db'),{m:{metalness:0.45}});
+   [0,1].forEach(s=>{const pz=z+(s?D/4:-D/4);bx(room,W*0.9,0.1,D/2-0.08,'#7a5a36',x,0.05,pz);const m=Math.ceil(n/2)-(s&&n%2?1:0);for(let i=0;i<m;i++){const y=0.1+i*0.2+0.09;bxM(room,W*0.86,0.18,D/2-0.12,[sideM,sideM,topM,topM,sideM,sideM],x,y,pz);tY=Math.max(tY,y+0.09)}});top=tY;break}
+  case 'concrete':{const n=Math.ceil(f*6);const sideM=p3Mat('bagS',bagTex('#c8102e','POST MIX'),{w:256,h:256});const topM=p3Mat('bagT',(c,w,h)=>{c.fillStyle='#e8e2d4';c.fillRect(0,0,w,h);for(let i=0;i<4;i++)for(let q=0;q<2;q++){c.strokeStyle='#cfc7b4';c.lineWidth=3;c.strokeRect(q*w/2+4,i*h/4+4,w/2-8,h/4-8)}c.fillStyle='rgba(255,255,255,.25)';c.fillRect(0,0,w,h)});
+   for(let i=0;i<n;i++){const lv=i>=4?1:0,j=i%4;const px=x-W/2+0.45+j*(W-0.9)/3,y=lv*0.62;bx(room,0.8,0.12,D-0.1,'#7a5a36',px,y+0.06,z);bxM(room,0.74,0.46,D-0.16,[sideM,sideM,topM,topM,sideM,sideM],px,y+0.12+0.23,z)}top=n>4?1.2:0.6;break}
+  case 'lighting':case 'temp':{const n=Math.ceil(f*4);const txt=k==='lighting'?'DECK LIGHTS':'TEMP FENCE';const m=p3Mat('ct'+k,cartonTex(txt,k==='lighting'?'#7a4a12':'#2f6fb0'));const tm=p3Mat('ctT',(c,w,h)=>{c.fillStyle='#c39a64';c.fillRect(0,0,w,h);c.fillStyle='#d9b77e';c.fillRect(0,h*0.46,w,h*0.08)});
+   for(let i=0;i<n;i++){const px=x-W/2+0.45+(i%2)*(W-0.9),pz=z+(i<2?-D/4:D/4)*0.6;bx(room,0.8,0.12,0.7,'#7a5a36',px,0.06,pz);bxM(room,0.74,0.5,0.64,[m,m,tm,tm,m,m],px,0.37,pz)}top=0.62;break}
+ }
+ return top}
+{const _ybP=yardBay;yardBay=function(room,k,kind,cc,f,x,z,W,D,row){if(f<=0||!PA[k])return _ybP.apply(this,arguments);let top=null;try{top=pY(k,f,x,z,W,D,room)}catch(e){console.error('yard art',k,e);top=null}
+  if(top==null)return _ybP.apply(this,arguments);yardLabel(room,k,x+(((row||0)%2)?0.55:-0.55),z,Math.max(1.35,top+0.45)+((row||0)%2)*0.3)}}
+
+/* ===== P42: truss plant + art for building materials ===== */
+PLANT.truss={n:'Truss Plant',sh:'Truss Plant',ic:'🔺',lines:['truss'],cost:5.5e6,cap:110,cf:0.62,oh:13e3,from:2002,d:'Builds roof and floor trusses from framing lumber with automated saws and gang-nail presses. Sells to builders across your branches.'};
+Object.assign(PA,{
+ dimlum:`<rect x="3" y="42" width="42" height="3" fill="#6b5a40"/>${[0,1,2,3].map(r=>[0,1,2,3,4,5].map(c=>`<rect x="${4+c*6.7}" y="${32-r*7.5}" width="6.2" height="7" fill="#e6d3a3" stroke="#b89d63" stroke-width=".5"/><path d="M${5+c*6.7} ${35-r*7.5}q2.5-2 5 0" stroke="#c7ad74" stroke-width=".4" fill="none"/>`).join('')).join('')}<rect x="4" y="22" width="40" height="1.4" fill="#1f4e8a"/><rect x="4" y="37" width="40" height="1.4" fill="#1f4e8a"/>`,
+ sheath:`${[0,1,2,3,4,5].map(i=>`<path d="M5 ${34-i*3.4}h30l8-6H13z" fill="${i%2?'#cfa56b':'#c79c60'}" stroke="#9a7440" stroke-width=".4"/><path d="M5 ${34-i*3.4}h30v3H5z" fill="#a8803f"/>`).join('')}<path d="M13 10h30l-8 6H5z" fill="#d6ad72"/>${Array.from({length:22},(_,i)=>`<rect x="${9+(i*7)%30}" y="${11+(i*3)%4}" width="${2+i%3}" height="1" fill="#a67a3e" opacity=".6" transform="rotate(${(i*37)%60-30} ${9+(i*7)%30} ${11+(i*3)%4})"/>`).join('')}<rect x="3" y="40" width="42" height="4" fill="#6b5a40"/>`,
+ roofing:`<path d="M2 30L24 10l22 20z" fill="#3c4148"/>${[0,1,2,3].map(r=>`<path d="M${6+r*4.4} ${27-r*4.5}h${36-r*8.8}" stroke="#2a2e33" stroke-width="1.2"/>${Array.from({length:8-r*2},(_,i)=>`<path d="M${9+r*4.4+i*4.4} ${27-r*4.5}v-4" stroke="#2a2e33" stroke-width=".7"/>`).join('')}`).join('')}<rect x="7" y="30" width="34" height="14" fill="#e7e1d3"/><rect x="7" y="36" width="34" height="3" fill="#2d6aa0"/><text x="24" y="35" font-size="4.6" font-weight="900" fill="#555" text-anchor="middle" font-family="Arial">SHINGLES</text>`,
+ ewp:`<rect x="3" y="42" width="42" height="3" fill="#6b5a40"/>${[0,1,2].map(i=>`<g transform="translate(${4+i*10} 0)"><rect x="0" y="12" width="8" height="4" fill="#e2c27f" stroke="#a9884a" stroke-width=".4"/><rect x="3" y="16" width="2" height="18" fill="#c69a5c"/><rect x="0" y="34" width="8" height="4" fill="#e2c27f" stroke="#a9884a" stroke-width=".4"/></g>`).join('')}<g>${[0,1,2,3,4,5,6].map(i=>`<rect x="35" y="${12+i*3.7}" width="9" height="3.4" fill="${i%2?'#d8b56f':'#e4c585'}"/>`).join('')}<rect x="35" y="12" width="9" height="26" fill="none" stroke="#a9884a" stroke-width=".5"/></g><text x="39.5" y="9" font-size="4.5" font-weight="900" fill="#d9c08a" text-anchor="middle" font-family="Arial">LVL</text>`,
+ truss:`${[0,1,2].map(i=>`<g transform="translate(${i*3} ${-i*3})" opacity="${1-i*0.12}"><path d="M3 38L22 16l19 22z" fill="none" stroke="#d9c08a" stroke-width="2.4" stroke-linejoin="round"/><path d="M22 16v22M12.5 38L22 27l9.5 11" stroke="#c9ae74" stroke-width="1.6" fill="none"/><rect x="20" y="36" width="4" height="3" fill="#aab3ba"/><rect x="11" y="36" width="3" height="3" fill="#aab3ba"/></g>`).join('')}<rect x="3" y="42" width="44" height="3" fill="#6b5a40"/>`});
+// 3D models for the new lines
+{const _pYB=pY;pY=function(k,f,x,z,W,D,room){
+ if(k==='dimlum')return lumBay(room,k,f,x,z,W,D,p3Mat('spfS',grainSide('#e6d3a3','150,120,70')),p3Mat('spfE',grainEnd('#ecdcb0','rgba(160,130,80,.55)')),p3Mat('spfT',grainSide('#e9d7a8','150,120,70',3)),'#1f4e8a');
+ if(k==='sheath'){const n=Math.ceil(f*6);let top=0.1;const osb=p3Mat('osbT',(c,w,h)=>{c.fillStyle='#c99f63';c.fillRect(0,0,w,h);for(let i=0;i<500;i++){c.fillStyle=`rgba(${120+Math.random()*60},${80+Math.random()*40},${30+Math.random()*30},.7)`;c.save();c.translate(Math.random()*w,Math.random()*h);c.rotate(Math.random()*3);c.fillRect(-6,-1.5,12+Math.random()*8,3);c.restore()}c.fillStyle='#1f4e8a';c.font='900 16px Arial';c.fillText('OSB 7/16',w*0.1,h*0.2)},{w:256,h:256});
+   const edge=p3Mat('osbE',(c,w,h)=>{c.fillStyle='#8a6638';c.fillRect(0,0,w,h);for(let i=0;i<24;i++){c.fillStyle=i%2?'#a57b45':'#7a5a30';c.fillRect(0,i*h/24,w,h/48)}});
+   [0,1].forEach(s=>{const pz=z+(s?D/4:-D/4);[-W*0.3,W*0.3].forEach(dx=>bx(room,0.1,0.08,D/2-0.1,'#6e5232',x+dx,0.04,pz));const m=Math.ceil(n/2)-(s&&n%2?1:0);for(let i=0;i<m;i++){const y=0.08+i*0.3+0.14;bxM(room,W*0.92,0.28,D/2-0.1,[edge,edge,osb,osb,edge,edge],x,y,pz);[-W*0.25,W*0.25].forEach(dx=>bx(room,0.03,0.29,D/2-0.08,'#2b2b2b',x+dx,y,pz));top=Math.max(top,y+0.14)}});return top}
+ if(k==='roofing'){const n=Math.ceil(f*6);let top=0.1;const side=p3Mat('shgS',(c,w,h)=>{c.fillStyle='#e5dfd0';c.fillRect(0,0,w,h);for(let i=0;i<8;i++){c.fillStyle='#d4cdbb';c.fillRect(0,i*h/8,w,2);c.fillStyle='#2d6aa0';c.fillRect(w*0.15,i*h/8+4,w*0.35,h/8-8);c.fillStyle='#fff';c.font='900 11px Arial';c.fillText('SHINGLES',w*0.18,i*h/8+h/16+4)}},{w:256,h:256});
+   const topM=p3Mat('shgT',(c,w,h)=>{c.fillStyle='#3e434a';c.fillRect(0,0,w,h);for(let r=0;r<6;r++){c.fillStyle='#2b2f34';c.fillRect(0,r*h/6,w,3);for(let q=0;q<8;q++){c.fillStyle=`rgba(${60+Math.random()*30},${64+Math.random()*30},${70+Math.random()*30},1)`;c.fillRect(q*w/8+(r%2?w/16:0)+1,r*h/6+3,w/8-2,h/6-4)}}});
+   for(let i=0;i<n;i++){const lv=i>=4?1:0,j=i%4;const px=x-W/2+0.45+j*(W-0.9)/3,y=lv*0.62;bx(room,0.8,0.12,D-0.1,'#7a5a36',px,y+0.06,z);bxM(room,0.74,0.46,D-0.16,[side,side,topM,topM,side,side],px,y+0.35,z)}return n>4?1.2:0.6}
+ if(k==='ewp'){const top=lumBay(room,k,f,x,z,W,D,p3Mat('ewpS',(c,w,h)=>{c.fillStyle='#c79a5c';c.fillRect(0,0,w,h);for(let i=0;i<4;i++){const y=i*h/4;c.fillStyle='#e2c27f';c.fillRect(0,y,w,h/16);c.fillRect(0,y+h/4-h/16,w,h/16);c.fillStyle='rgba(0,0,0,.25)';c.fillRect(0,y+h/4-1,w,1.5)}for(let i=0;i<300;i++){c.fillStyle='rgba(140,100,50,.5)';c.fillRect(Math.random()*w,Math.random()*h,8,1.5)}}),p3Mat('ewpE',(c,w,h)=>{c.fillStyle='#3b2a1a';c.fillRect(0,0,w,h);const cols=6,rows=3,bw=w/cols,bh=h/rows;for(let r=0;r<rows;r++)for(let q=0;q<cols;q++){const x0=q*bw,y0=r*bh;c.fillStyle='#e2c27f';c.fillRect(x0+bw*0.15,y0+4,bw*0.7,bh*0.18);c.fillRect(x0+bw*0.15,y0+bh*0.78,bw*0.7,bh*0.18);c.fillStyle='#c69a5c';c.fillRect(x0+bw*0.44,y0+4+bh*0.18,bw*0.12,bh*0.6)}}),p3Mat('ewpT',grainSide('#e2c27f','150,110,60',3)),'#1f4e8a');return top}
+ if(k==='truss'){const n=Math.ceil(f*7);const col='#e2cb95';const span=W*0.92,rise=0.75;const len=Math.hypot(span/2,rise),ang=Math.atan2(rise,span/2);
+   [-W*0.32,0,W*0.32].forEach(dx=>bx(room,0.12,0.08,D,'#6e5232',x+dx,0.04,z));
+   for(let i=0;i<n;i++){const tz=z-D/2+0.15+i*(D-0.3)/Math.max(1,6);const g=new THREE.Group();g.position.set(x,0.1,tz);room.add(g);
+    bx(g,span,0.07,0.05,col,0,0.035,0);[-1,1].forEach(sd=>{const m=bx(g,len,0.07,0.05,col,sd*span/4,rise/2+0.035,0);m.rotation.z=-sd*ang});
+    bx(g,0.05,rise,0.05,col,0,rise/2,0);[-1,1].forEach(sd=>{const wl=Math.hypot(span/4,rise/2);const m=bx(g,wl,0.05,0.04,col,sd*span/8,rise/4+0.03,0);m.rotation.z=sd*Math.atan2(rise/2,span/4)});
+    [[-span/2+0.1,0.04],[0,0.04],[span/2-0.1,0.04],[0,rise]].forEach(([px,py])=>{const pl=bx(g,0.1,0.1,0.052,'#b9c2c8',px,py,0,{metalness:0.6,roughness:0.4});pl.castShadow=false})}
+   return 0.1+rise+0.1}
+ return _pYB.apply(this,arguments)}}
+
+// ---- Free vs CEO mode: up to 2 branches free; 3rd branch, plants, supply contracts need CEO mode
+const FREE_BR=2;
+function brLocked(){return !ceoUnlocked()&&S.corp&&S.corp.br.length>=FREE_BR}
+function payLock(kind){
+ const T={br:['🔒 Your 3rd branch','Two branches is a real business. Going past that means regional managers, directors and a corporate office, and that\'s <b>CEO mode</b>.'],
+  pl:['🔒 Manufacturing','Building your own truss, fence and post plants is part of <b>CEO mode</b>. Make the product, cut your cost on every unit, sell the extra to other yards.'],
+  pur:['🔒 Supply contracts','National mill contracts, central buyers and an import team come with <b>CEO mode</b>. Lock prices for a year and buy for every yard at once.']}[kind];
+ modal(T[0],`<p>${T[1]}</p><p class="mut small">Everything you've built stays. CEO mode is a one-time unlock.</p>`,[{t:'🎩 See CEO mode',c:'go',f:()=>shopGo()},{t:'Not now'}])}
+function lockCard(kind){const T={br:'🔒 Branch 3 and up need CEO mode',pl:'🔒 Manufacturing needs CEO mode',pur:'🔒 Supply contracts need CEO mode'}[kind];
+ const D={br:`You've opened ${FREE_BR} of ${FREE_BR} free branches. CEO mode unlocks unlimited branches, regions and acquisitions.`,pl:'Plants (fence, post, truss and more) open with CEO mode.',pur:'Corporate Purchasing, mill contracts and imports open with CEO mode.'}[kind];
+ return `<div class="card shopban" style="cursor:pointer" onclick="payLock('${kind}')"><h2 style="margin:0 0 4px">${T}</h2><p class="small" style="margin:0 0 8px">${D}</p><button class="btn go sm" onclick="event.stopPropagation();shopGo()">🎩 See CEO mode</button></div>`}
+{const _w=corpWiz;corpWiz=function(i){if(brLocked())return payLock('br');return _w.apply(this,arguments)}}
+{const _o=corpOpen;corpOpen=function(){if(brLocked()){S.corp.wiz=null;render();return payLock('br')}return _o.apply(this,arguments)}}
+{const _p=plWiz;plWiz=function(){if(!ceoUnlocked())return payLock('pl');return _p.apply(this,arguments)}}
+{const _b=plBuild;plBuild=function(){if(!ceoUnlocked()){S.corp.pw=null;render();return payLock('pl')}return _b.apply(this,arguments)}}
+{const _s=purSetup;purSetup=function(){if(!ceoUnlocked())return payLock('pur');return _s.apply(this,arguments)}}
+{const _m=metroCard;metroCard=function(i){let h=_m.apply(this,arguments);if(brLocked())h=h.replace(/<button class="btn go" style="width:100%" onclick="corpWiz\((\d+)\)">[^<]*<\/button>/,`<button class="btn sec" style="width:100%" onclick="payLock('br')">🔒 3rd branch needs CEO mode</button>`);return h}}
+{const _c=coPlants;coPlants=function(){if(!ceoUnlocked()){const C=mfgInit();if(!C.pl.length)return lockCard('pl')+`<div class="card"><p class="mut small">Your own plants lower your cost on every unit you sell. Truss plants feed the building-materials side.</p></div>`;return lockCard('pl')+_c.apply(this,arguments).replace(/<div class="card"><h2>Build a plant<\/h2>[\s\S]*$/,'')}return _c.apply(this,arguments)}}
+{const _h=purHtml;purHtml=function(){const P=purInit();if(!ceoUnlocked()&&!P.on)return lockCard('pur');return _h.apply(this,arguments)}}
+{const _ch=corpHtml;corpHtml=function(){let h=_ch.apply(this,arguments);const C=S.corp;if(C&&brLocked()&&(C.tab==='markets'||C.tab==='branches'||C.tab==='map')){h=h.replace(/(<div class="ctabs">[\s\S]*?<\/div>)/,'$1'+lockCard('br'))}return h}}
 
 if(typeof document!=='undefined'&&document.getElementById('main'))addEventListener('DOMContentLoaded',boot);
 </script>

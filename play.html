@@ -4948,8 +4948,8 @@ function inboxAdd(title,html,btns){btns=btns&&btns.length?btns:[{t:'OK'}];const 
 function inboxDo(it,i,who){const b=it.btns[i];INBOX=INBOX.filter(x=>x!==it);try{if(b&&b.f)b.f()}catch(e){console.error(e)}
  if(who&&!it.info){S.dlog=S.dlog||[];S.dlog.push({w:S.week,who,t:String(it.title).replace(/<[^>]*>/g,''),c:inbTxt(b||{t:''})});S.dlog=S.dlog.slice(-40)}}
 function inboxAct(id,i){const it=INBOX.find(x=>x.id===id);if(!it)return;inboxDo(it,i,null);renderHud();render();save()}
-{const _mdS=modal;modal=function(title,html,btns){if(IN_TICK&&inboxOn()&&!INB_MUST.test(title)){inboxAdd(title,html,btns);return}return _mdS(title,html,btns)}}
-{const _mfS=modalFirst;modalFirst=function(t,h,b){if(IN_TICK&&inboxOn()&&!INB_MUST.test(t)){inboxAdd(t,h,b);return}return _mfS(t,h,b)}}
+{const _mdS=modal;modal=function(title,html,btns){if(IN_TICK&&inboxOn()&&!INB_MUST.test(title)&&!(btns&&btns.length>1)){inboxAdd(title,html,btns);return}return _mdS(title,html,btns)}}
+{const _mfS=modalFirst;modalFirst=function(t,h,b){if(IN_TICK&&inboxOn()&&!INB_MUST.test(t)&&!(b&&b.length>1)){inboxAdd(t,h,b);return}return _mfS(t,h,b)}}
 {const _tkS=tick;tick=function(){IN_TICK=true;try{_tkS()}finally{IN_TICK=false}}}
 function inboxAge(){const to=relaxed()?2:4;INBOX.slice().forEach(it=>{const age=S.week-it.w;if(it.info){if(age>=6)INBOX=INBOX.filter(x=>x!==it)}else if(age>=to)inboxDo(it,inbDef(it.btns),'Auto ('+to+' wks)')})}
 function inboxHtml(){if(!INBOX.length)return `<div class="card"><p class="mut" style="margin:0">📭 All caught up. New events land here instead of stopping the clock.${delegateWho()?' '+esc(delegateWho())+' handles routine calls for you.':''}</p></div>`+digestLogHtml();
@@ -5969,6 +5969,16 @@ Object.assign(BCH,{
    choice('Take a couple of students','good',()=>{mor(mdCrew(),3);bp('cb',0.97)},''),
    choice('Donate some material instead','sec',()=>{spend(mdR(3e3*infl()),'opex');S.rep+=200},''),
    choice('Ignore it, no time to train kids','sec',()=>{},'')]]}}});
+
+/* ===== P51: Mini-game frequency setting ===== */
+const MGASK={all:['🎮 Every time','Every mini game asks you to play'],some:['🎲 Sometimes','About 1 in 3; the crew handles the rest'],off:['🧑‍🔧 Crew handles them','No mini game prompts (mega projects still ask)']};
+function mgAskPref(){return (S&&S.mgAsk)||'some'}
+function mgAskSet(k){S.mgAsk=k;save();render()}
+{const _mo=mgOffer;mgOffer=function(kind,ctx,title,html,apply){const p=mgAskPref();
+ if(S&&!S.ceo&&(p==='off'||(p==='some'&&Math.random()>0.34))){if(typeof mgMark==='function')mgMark(kind);try{const t=apply(0.5,true);news((MGDEF[kind]?MGDEF[kind].ic:'🎮')+' '+(t||(String(title).replace(/<[^>]*>/g,'')+': the crew handled it.')))}catch(e){console.error(e)}return}
+ return _mo.apply(this,arguments)}}
+{const _st=settingsHtml;settingsHtml=function(){const p=mgAskPref();const o=k=>`<button class="opt ${p===k?'on':''}" onclick="mgAskSet('${k}')">${MGASK[k][0]}<small>${MGASK[k][1]}</small></button>`;
+ return _st.apply(this,arguments).replace('<div class="card"><h2>Graphics</h2>',`<div class="card"><h2>Mini games</h2><div class="grid">${o('all')}${o('some')}${o('off')}</div></div><div class="card"><h2>Graphics</h2>`)}}
 
 if(typeof document!=='undefined'&&document.getElementById('main'))addEventListener('DOMContentLoaded',boot);
 </script>

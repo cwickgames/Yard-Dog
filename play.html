@@ -579,7 +579,7 @@ function teamFor(d){const ids=d.team||[];const t=S.staff.filter(s=>ids.includes(
 /* ================= INVENTORY & MARKET ================= */
 const invVal=()=>LINES.reduce((a,l)=>a+S.inv[l.k].u*S.inv[l.k].c,0);
 const invUnits=()=>LINES.reduce((a,l)=>a+S.inv[l.k].u,0);
-const yardCap=()=>Math.round(OFFICES[S.office].cap*(has('y_rack')?1.35:1)*(has('y_auto')?1.25:1)*Math.pow(1.1,tierN('ye',5)));
+const yardCap=()=>Math.round((S.bYard||1)*OFFICES[S.office].cap*(has('y_rack')?1.35:1)*(has('y_auto')?1.25:1)*Math.pow(1.1,tierN('ye',5)));
 const itoolCap=()=>1+Object.keys(ITOOLS).reduce((a,k)=>a+((S.itools||{})[k]&&ITOOLS[k][4].cap||0),0);
 const crewCap=s=>(6+eff(s,'ops')/20)*(1+0.35*(s.helpers||0))*itoolCap();
 const installCap=()=>onTask('install').reduce((a,s)=>a+crewCap(s),0);
@@ -4025,7 +4025,7 @@ function tkKind(line){if(['deck','framing','rail','pergola'].includes(line))retu
  if(['vinyl','compfence'].includes(line))return 'vinyl';if(['orn','gate','bollard','lighting'].includes(line))return 'orn';if(['chain','ag','welded','temp','sec','sport','slats','pipe'].includes(line))return 'chain';return 'wood'}
 GAMES.take={start(M){const B=M.ctx&&M.ctx.B;const r=B&&typeof rfqOf==='function'?rfqOf(B.d):null;const kind=(M.ctx&&M.ctx.kind)||(r?tkKind(r.line):pick(Object.keys(TKT)));M.k=kind;M.T=TKT[kind];M.v={};
  if(kind[0]==='d')this.genDeck(M);else this.genFence(M);M.dur=kind[0]==='d'?180:240;this.draw(M)},
- genFence(M){const T=M.T,shape=pick(['U','U','U','L','straight']);const L=ri(30,70),Bk=ri(48,96),Rr=ri(30,70);
+ genFence(M){const T=M.T,shape=M.shape||pick(['U','U','U','L','straight']);const bg=M.big||1;const L=Math.round(ri(30,70)*bg),Bk=Math.round(ri(48,96)*bg),Rr=Math.round(ri(30,70)*bg);
   // runs as polylines from the house outward; corners shared
   let runs;if(shape==='U')runs=[{n:'Left side',a:[0,0],b:[0,L]},{n:'Back',a:[0,L],b:[Bk,L]},{n:'Right side',a:[Bk,L],b:[Bk,0]}];
   else if(shape==='L')runs=[{n:'Side',a:[0,0],b:[0,L]},{n:'Back',a:[0,L],b:[Bk,L]}];else runs=[{n:'Property line',a:[0,0],b:[Bk,0]}];
@@ -4054,21 +4054,13 @@ GAMES.take={start(M){const B=M.ctx&&M.ctx.B;const r=B&&typeof rfqOf==='function'
   const sc=sum/M.T.f.length;M.show=true;
   mgEnd(sc,`<table class="tktab"><tr><th>Item</th><th>You</th><th>Takeoff</th><th></th></tr>${rows}</table><details style="text-align:left;margin-top:6px"><summary class="small">How it pencils out</summary><div class="small mut">${M.work.map(w=>'• '+esc(w)).join('<br>')}</div></details>`)},
  draw(M){const P=M.plan;let svg='';
-  if(P.type==='fence'){const maxX=P.Bk,maxY=Math.max(P.L,P.Rr||0,1)||P.L;const sc=Math.min(250/maxX,(P.shape==='straight'?80:220)/Math.max(maxY,1));const ox=(320-maxX*sc)/2,oy=40;const X=x=>ox+x*sc,Y=y=>oy+y*sc;const hY=P.shape==='straight'?Y(0)+50:oy;
-   let s=`<rect x="${X(0)-6}" y="6" width="${maxX*sc+12}" height="${oy-14}" rx="4" fill="#3b5a50"/><text x="160" y="${oy/2+2}" font-size="11" fill="#d8fbe9" text-anchor="middle" font-weight="800">HOUSE</text>`;
-   if(P.shape==='straight')s=`<text x="160" y="${Y(0)-14}" font-size="10" fill="#a3c9b8" text-anchor="middle">STREET SIDE · ends at both property corners</text>`;
-   P.runs.forEach(R=>{const dx=(R.b[0]-R.a[0])/R.len,dy=(R.b[1]-R.a[1])/R.len;const v=dx===0;let pos=0;const segs=[];R.gates.forEach(g=>{segs.push([pos,g.at,'f']);segs.push([g.at,g.at+g.w,'g',g]);pos=g.at+g.w});segs.push([pos,R.len,'f']);
-    segs.forEach(([a0,a1,t,g])=>{const x1=X(R.a[0]+dx*a0),y1=Y(R.a[1]+dy*a0),x2=X(R.a[0]+dx*a1),y2=Y(R.a[1]+dy*a1);const mx=(x1+x2)/2,my=(y1+y2)/2;const off=v?(R.a[0]===0?-16:16):(P.shape==='straight'?-10:16);
-     if(t==='f'){s+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#c98a4b" stroke-width="4" stroke-linecap="round"/>`;if(a1-a0>0)s+=`<text x="${mx+(v?off:0)}" y="${my+(v?4:off)}" font-size="11" fill="#ffd166" text-anchor="middle" font-weight="800">${a1-a0}′</text>`}
-     else{s+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#5aa0ff" stroke-width="3" stroke-dasharray="4 3"/><text x="${mx+(v?off*1.9:0)}" y="${my+(v?4:off)}" font-size="9.5" fill="#7ab8ff" text-anchor="middle" font-weight="800">${g.w}′ gate</text>`}});
-    s+=`<circle cx="${X(R.a[0])}" cy="${Y(R.a[1])}" r="3.5" fill="#fff"/><circle cx="${X(R.b[0])}" cy="${Y(R.b[1])}" r="3.5" fill="#fff"/>`});
-   svg=`<svg viewBox="0 0 320 ${P.shape==='straight'?120:Math.round(oy+maxY*sc+28)}" class="takesvg">${s}</svg>`}
+  if(P.type==='fence')svg=tkFenceSvg(P);
   else{const sc=Math.min(260/P.W,200/P.D);const w=P.W*sc,h=P.D*sc,ox=(320-w)/2,oy=40;let s=`<rect x="${ox-6}" y="6" width="${w+12}" height="${oy-14}" rx="4" fill="#3b5a50"/><text x="160" y="${oy/2+2}" font-size="11" fill="#d8fbe9" text-anchor="middle" font-weight="800">HOUSE (ledger)</text><rect x="${ox}" y="${oy}" width="${w}" height="${h}" fill="#7a5232" stroke="#c98a4b" stroke-width="3"/>`;
    for(let i=1;i<8;i++)s+=`<line x1="${ox}" y1="${oy+h*i/8}" x2="${ox+w}" y2="${oy+h*i/8}" stroke="rgba(255,255,255,.12)"/>`;
    s+=`<text x="160" y="${oy+h+18}" font-size="12" fill="#ffd166" text-anchor="middle" font-weight="800">${P.W}′</text><text x="${ox+w+16}" y="${oy+h/2+4}" font-size="12" fill="#ffd166" text-anchor="middle" font-weight="800">${P.D}′</text><text x="160" y="${oy+h/2+4}" font-size="10" fill="#f3e0c8" text-anchor="middle">boards run ↔ · joists run ↕</text>`;
    svg=`<svg viewBox="0 0 320 ${oy+h+30}" class="takesvg">${s}</svg>`}
   const inp=M.T.f.map(k=>`<div class="tkrow"><span><b>${TKF[k][0]}</b>${TKF[k][1]?`<br><span class="mut">${TKF[k][1]}</span>`:''}</span><span class="tkin"><button onclick="GAMES.take.bump('${k}',-1)">−</button><input id="tk_${k}" type="number" inputmode="numeric" min="0" value="${M.v[k]??''}" oninput="GAMES.take.set('${k}',this.value)"><button onclick="GAMES.take.bump('${k}',1)">+</button></span></div>`).join('');
-  document.getElementById('mgA').innerHTML=`<div class="tkwrap"><div class="tkhead"><b>${M.T.n}</b> · ${esc(M.notes.join(' · '))}</div>${svg}<div class="tkspec">${esc(M.T.spec)} Concrete: 2 bags per hole.</div><div class="tkgrid">${inp}</div></div>`;
+  document.getElementById('mgA').innerHTML=`<div class="tkwrap"><div class="tkhead"><b>${M.T.n}</b> · ${esc(M.notes.join(' · '))}</div>${svg}${P.type==='fence'?tkLegend(P):''}<div class="tkspec">${esc(M.T.spec)} Concrete: 2 bags per hole.</div><div class="tkgrid">${inp}</div></div>`;
   document.getElementById('mgF').innerHTML=`<button class="btn" onclick="GAMES.take.finish(MG)">✅ Submit takeoff</button>`}};
 document.head.insertAdjacentHTML('beforeend',`<style>.tkhead{font-size:13px;margin-bottom:4px}.tkspec{font-size:12px;line-height:1.35;background:rgba(255,255,255,.06);border-radius:10px;padding:8px 10px;margin:6px 0}
 .tkgrid{display:grid;gap:6px}.tkrow{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px}.tkin{display:flex;align-items:center;gap:4px}
@@ -4076,6 +4068,25 @@ document.head.insertAdjacentHTML('beforeend',`<style>.tkhead{font-size:13px;marg
 .tkin button{width:32px;height:32px;border-radius:8px;border:0;background:rgba(255,255,255,.12);color:inherit;font:800 16px Nunito,system-ui}
 .tktab{width:100%;font-size:13px;border-collapse:collapse;margin-top:6px}.tktab td,.tktab th{padding:3px 6px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
 .tkwrap{max-height:62vh;overflow:auto;padding-right:2px}</style>`);
+
+/* Readable fence plan: labels never collide or clip, plus a text list of every run */
+function tkFenceSvg(P){const st=P.shape==='straight';const maxX=P.Bk,maxY=st?0:Math.max(P.L,P.Rr||0,1);
+ const sc=st?230/maxX:Math.min(230/maxX,220/maxY);const ox=(320-maxX*sc)/2,oy=st?64:40;const X=x=>ox+x*sc,Y=y=>oy+y*sc;
+ const H=st?118:Math.round(oy+maxY*sc+40);let s='',lab=[];
+ if(st)s+=`<text x="160" y="18" font-size="10" fill="#a3c9b8" text-anchor="middle">STREET SIDE · ends at both property corners</text>`;
+ else s+=`<rect x="${X(0)-6}" y="6" width="${maxX*sc+12}" height="${oy-14}" rx="4" fill="#3b5a50"/><text x="160" y="${oy/2+2}" font-size="11" fill="#d8fbe9" text-anchor="middle" font-weight="800">HOUSE</text><rect x="${X(0)}" y="${Y(0)}" width="${maxX*sc}" height="${maxY*sc}" fill="rgba(62,224,143,.07)"/>`;
+ const place=(t,x,y,dx,dy,fs,col)=>{const w=t.length*fs*0.58+6,h=fs+4;let k=0;const hit=()=>lab.some(o=>Math.abs(o.x-x)<(o.w+w)/2&&Math.abs(o.y-y)<(o.h+h)/2);
+  while(hit()&&k<6){x+=dx;y+=dy;k++}x=clamp(x,w/2+2,318-w/2);y=clamp(y,h,H-4);lab.push({x,y,w,h,t,fs,col})};
+ P.runs.forEach(R=>{const dx=(R.b[0]-R.a[0])/R.len,dy=(R.b[1]-R.a[1])/R.len;const v=dx===0;const outS=v?(R.a[0]===0?-1:1):(st?-1:1);let pos=0;const segs=[];
+  R.gates.forEach(g=>{segs.push([pos,g.at,'f']);segs.push([g.at,g.at+g.w,'g',g]);pos=g.at+g.w});segs.push([pos,R.len,'f']);
+  segs.forEach(([a0,a1,t,g])=>{const x1=X(R.a[0]+dx*a0),y1=Y(R.a[1]+dy*a0),x2=X(R.a[0]+dx*a1),y2=Y(R.a[1]+dy*a1);const mx=(x1+x2)/2,my=(y1+y2)/2;
+   if(t==='f'){s+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#c98a4b" stroke-width="4" stroke-linecap="round"/>`;if(a1-a0>0){const o=outS*18;v?place((a1-a0)+'′',mx+o,my+4,outS*14,0,11,'#ffd166'):place((a1-a0)+'′',mx,my+o+(o>0?2:0),0,outS*13,11,'#ffd166')}}
+   else{s+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#5aa0ff" stroke-width="3" stroke-dasharray="4 3"/>`;const o=-outS*20;v?place(g.w+'′ gate',mx+o,my+4,-outS*14,0,9.5,'#7ab8ff'):place(g.w+'′ gate',mx,my+o+(o>0?4:0),0,-outS*12,9.5,'#7ab8ff')}});
+  s+=`<circle cx="${X(R.a[0])}" cy="${Y(R.a[1])}" r="3.5" fill="#fff"/><circle cx="${X(R.b[0])}" cy="${Y(R.b[1])}" r="3.5" fill="#fff"/>`});
+ s+=lab.map(l=>`<text x="${l.x}" y="${l.y}" font-size="${l.fs}" fill="${l.col}" text-anchor="middle" font-weight="800" stroke="#10261f" stroke-width="3" paint-order="stroke">${l.t}</text>`).join('');
+ return `<svg viewBox="0 0 320 ${H}" class="takesvg">${s}</svg>`}
+function tkLegend(P){return `<div class="tklist">${P.runs.map(R=>{let pos=0;const parts=[];R.gates.forEach(g=>{if(g.at-pos>0)parts.push(`${g.at-pos}′ fence`);parts.push(`<span style="color:#7ab8ff">${g.w}′ gate</span>`);pos=g.at+g.w});if(R.len-pos>0)parts.push(`${R.len-pos}′ fence`);return `<div><b>${esc(R.n)}</b> (${R.len}′): ${parts.join(' · ')}</div>`}).join('')}</div>`}
+document.head.insertAdjacentHTML('beforeend','<style>.tklist{font-size:12px;line-height:1.45;background:rgba(0,0,0,.18);border-radius:10px;padding:6px 10px;margin-top:4px}.takesvg{width:100%;height:auto;display:block}</style>');
 
 /* ===== P39: new product lines — steel deck framing, engineered wood siding, prefinished siding ===== */
 LINES.push(
@@ -4923,7 +4934,7 @@ function setMode(m){S.mode=m;if(m==='relaxed')S.autoRest=true;save();render()}
 
 // ---------- inbox: weekly events wait here instead of stopping the clock ----------
 let INBOX=[],IN_TICK=false,INB_ID=1;
-const INB_MUST=/Approval Needed|Chapter|Story:|Out of (Cash|Money)|bankrupt|corporate|CEO mode|CEO approval|your approval|Challenge Complete|New company|Welcome|Restore|Backup|Saved|Not enough|Start over|Shop|Already yours|Purchase|Unlock/i;
+const INB_MUST=/Decision:|Manager's call|Regular:|Mega Project|Legacy|Approval Needed|Chapter|Story:|Out of (Cash|Money)|bankrupt|corporate|CEO mode|CEO approval|your approval|Challenge Complete|New company|Welcome|Restore|Backup|Saved|Not enough|Start over|Shop|Already yours|Purchase|Unlock/i;
 const INB_BIG=/another truck|We'|Pitch from|found |recruiter|Go public|Acquisition|Supply Contract|Poaching|move|Offer\b/i;
 const INB_NO=/not now|^pass|put it off|later|skip|politely|decline|ignore|^no\b|not this|back to work|okay|got it|hold the line|deny|reject|^keep|let them go|nice|^ok$/i;
 const INB_REC=/approve|payment plan|file the notice|split it fairly|split it into|team workshop|paid leave|redo the takeoff|bid it as specified|honor|voluntary ot|hold fair|rebuild|appeal to loyalty|tell customers the truth|talk about it|full safety|send the gift|sure/i;
@@ -5006,7 +5017,7 @@ PANELS.research[2]=()=>segFor('research')+researchHtml();
 
 // ---------- play style card in Settings ----------
 {const _stS=settingsHtml;settingsHtml=function(){return `<div class="card"><h2>Play style</h2><div class="grid">
- <button class="opt ${relaxed()?'on':''}" onclick="setMode('relaxed')">🌤️ Relaxed<small>Your crew handles routine calls, auto-restock is on, decisions wait 2 weeks</small></button>
+ <button class="opt ${relaxed()?'on':''}" onclick="setMode('relaxed')">🌤️ Relaxed<small>Gentler market, auto-restock is on, undecided calls fall back after 2 weeks</small></button>
  <button class="opt ${relaxed()?'':'on'}" onclick="setMode('hands')">🧰 Hands-on<small>You make every call unless you have an assistant manager; decisions wait 4 weeks</small></button></div></div>`+_stS.apply(this,arguments)}}
 
 // ---------- weekly + new-game hooks ----------
@@ -5024,7 +5035,7 @@ const TOUR5=[
  {d5:2,t:()=>'📝 Sales',h:()=>`<p><b>Stock</b>: your counter only sells what's in the yard. Auto-restock keeps the bins full.</p><p><b>Bids</b>: contractors and homeowners send requests for quotes. ${lockLeft('bids')?'Bidding opens in your second month, once the counter is running.':'Win a bid and the order lands on your board.'}</p>`},
  {d5:3,t:()=>'🌱 Grow',h:()=>`<p>Upgrade packs, new product lines, your facility and challenges. ${lockLeft('research')?'Opens after your first month.':'A badge shows when a pack is ready.'}</p>`},
  {d5:4,t:()=>'💰 Money',h:()=>`<p>Fiscal-year results, customer accounts, your fleet, the bank, and how you stack up against rivals. ${lockLeft('business')?'Opens in a few weeks.':''}</p>`},
- {t:()=>'Pick your pace',h:()=>`<p>You're on <b>${relaxed()?'🌤️ Relaxed':'🧰 Hands-on'}</b>.</p><ul><li><b>Relaxed</b>: your crew handles routine calls and decisions wait 2 weeks.</li><li><b>Hands-on</b>: you make every call until you hire a manager; decisions wait 4 weeks.</li></ul><p>Switch any time in ⚙️ Settings.</p>`},
+ {t:()=>'Pick your pace',h:()=>`<p>You're on <b>${relaxed()?'🌤️ Relaxed':'🧰 Hands-on'}</b>.</p><ul><li><b>Relaxed</b>: a gentler market, and undecided calls fall back to a safe default after 2 weeks.</li><li><b>Hands-on</b>: you make every call until you hire a manager; decisions wait 4 weeks.</li></ul><p>Switch any time in ⚙️ Settings.</p>`},
  {t:()=>'How to run a great yard',h:()=>`<ul><li>Keep your best sellers <b>in stock</b>. Empty bins send customers to rivals.</li><li>Every truck needs someone on <b>🚚 Delivery</b>.</li><li>Watch <b>commodity prices</b>. Stock bought cheap and sold at today's price is pure margin.</li><li>Real distributor margins are thin: 16–25% gross on most lines. Watch payroll.</li></ul>`,last:1}];
 const DK5={Branch:'Yard',Stock:'Sales',Bid:'Sales',Upgrades:'Grow',Business:'Money'};
 let TOUR5_ON=false;
@@ -5526,6 +5537,438 @@ function lockCard(kind){const T={br:'🔒 Branch 3 and up need CEO mode',pl:'�
 {const _c=coPlants;coPlants=function(){if(!ceoUnlocked()){const C=mfgInit();if(!C.pl.length)return lockCard('pl')+`<div class="card"><p class="mut small">Your own plants lower your cost on every unit you sell. Truss plants feed the building-materials side.</p></div>`;return lockCard('pl')+_c.apply(this,arguments).replace(/<div class="card"><h2>Build a plant<\/h2>[\s\S]*$/,'')}return _c.apply(this,arguments)}}
 {const _h=purHtml;purHtml=function(){const P=purInit();if(!ceoUnlocked()&&!P.on)return lockCard('pur');return _h.apply(this,arguments)}}
 {const _ch=corpHtml;corpHtml=function(){let h=_ch.apply(this,arguments);const C=S.corp;if(C&&brLocked()&&(C.tab==='markets'||C.tab==='branches'||C.tab==='map')){h=h.replace(/(<div class="ctabs">[\s\S]*?<\/div>)/,'$1'+lockCard('br'))}return h}}
+
+/* ===== P46: Regulars — named contractors you treat well and grow with ===== */
+const RTIER=[['Solo operator',1.6e3],['Small crew',4e3],['Established outfit',10e3],['Big contractor',24e3],['Regional builder',55e3]];
+const RTRADE=[{t:'contractor',ic:'🪵',lines:['wood','chain','vinyl']},{t:'deckpro',ic:'🛠️',lines:['deck','comp','rail']},{t:'contractor',ic:'⛓️',lines:['chain','ag','orn']},{t:'builder',ic:'🏗️',lines:['framing','dimlum','vinyl','deck']}];
+const RPERS=[['old-school','Pays cash, hates surprises. Loyal for life if you never let him down.'],['hustler','Always in a hurry. Rush orders, last-minute changes, big upside.'],['penny-pincher','Watches every nickel. Will walk over 3%.'],['family-run','Runs it with the kids. Remembers who showed up for them.'],['up-and-comer','New on her own, hungry to grow. Help her early and she grows fast.']];
+function regInit(){S.regs=S.regs||[];S.regW=S.regW||{next:S.week+ri(6,12),ask:S.week+ri(8,14)};return S.regs}
+const regOk=()=>S&&S.week>=(S.gw0==null?0:S.gw0)+8;
+function regMax(){const y=Math.max(0,(S.week-(S.gw0||9))/52);return Math.min(7,2+Math.floor(y/1.5)+(S.rep>50e3?1:0))}
+function regSpend(R){return RTIER[R.tier][1]*infl()*(0.6+R.loy/250)}
+function regNew(carry){const tr=pick(RTRADE);const P=pick(RPERS);const nm=pick(FIRST)+' '+pick(LAST);
+ let co=acctName(tr.t==='builder'?'builder':tr.t);let k=0;while(S.regs.some(r=>r.co===co)&&k++<8)co=acctName(tr.t);
+ const line=tr.lines.find(l=>S.lines.includes(l))||pick(S.lines);
+ const R={id:S.nid++,name:nm,co,av:avatarRand(),ic:tr.ic,line,tier:0,xp:0,loy:55,per:P[0],bio:P[1],since:S.week,lunch:-99,spent:0,rely:rnd(0.6,1)};
+ if(carry){Object.assign(R,{name:carry.name,co:carry.co,av:carry.av,ic:carry.ic,per:carry.per,bio:carry.bio,tier:Math.max(0,carry.tier-1),loy:75,old:true});R.line=S.lines.includes(carry.line)?carry.line:R.line}
+ if(R.per==='up-and-comer')R.grow=1.6;S.regs.push(R);return R}
+function regIntro(R){modal('🤝 Regular: '+esc(R.name),`<div style="display:flex;gap:12px;align-items:center">${avatar(R.av,72)}<div><b>${esc(R.co)}</b><div class="mut small">${R.ic} ${RTIER[R.tier][0]} · ${esc(R.per)}</div></div></div><p>${R.old?`${esc(R.name.split(' ')[0])} heard you opened a new yard and followed you over. Old friends don't forget.`:`${esc(R.name.split(' ')[0])} walked up to the counter today and asked if you'd be their main supplier.`}</p><p class="mut small">${esc(R.bio)}</p><p class="small">Treat regulars well and they grow, buy more every week, and send their friends. Let them down and a rival takes them.</p>`,[{t:'Welcome aboard',c:'go'}])}
+function regGone(R,why){S.regs=S.regs.filter(x=>x!==R);const riv=pick(S.rivals)||{n:'a rival'};S.regLost=(S.regLost||0)+1;S.rep=Math.max(0,S.rep-300*(R.tier+1));
+ news('💔 '+R.name+' ('+R.co+') moved their account to '+riv.n+'.');modal('💔 Regular: '+esc(R.name)+' is gone',`<div style="display:flex;gap:12px;align-items:center">${avatar(R.av,64)}<p>${why||`${esc(R.name.split(' ')[0])} stopped answering. Turns out ${esc(riv.n)} has been getting the orders for weeks.`}</p></div><p class="mut small">You lost about ${$m(regSpend(R)*52)} a year in sales, and the word got around (−reputation).</p>`,[{t:'Ouch'}])}
+function regWeek(){if(!regOk())return;regInit();let tot=0,gp=0;
+ S.regs.slice().forEach(R=>{const sp=regSpend(R)*rnd(0.8,1.2);const k=S.inv[R.line]?R.line:S.lines[0];const I=S.inv[k];const mg=S.mg[k]||0.25;const up=unitPrice(k);const want=sp*(1-mg)/up;const got=Math.min(I.u,want);
+  if(want>0&&got<want*0.7){R.loy-=2.5;R.miss=(R.miss||0)+1;if(R.miss%3===1)news('📦 '+R.name+' came in for '+LN(k).n+' and we were short. Not a good look.')}else R.miss=0;
+  I.u-=got;const r=got*up/(1-mg);tot+=r;gp+=r-got*I.c;R.spent+=r;
+  R.loy=clamp(R.loy-0.12+(R.per==='old-school'?0.05:0)+(mg>LN(k).m+0.06&&R.per==='penny-pincher'?-0.6:0),0,100);
+  if(R.loy>=60&&R.tier<RTIER.length-1){R.xp+=(R.loy-50)/50*4*(R.grow||1)*rnd(0.6,1.3);if(R.xp>=100){R.xp=0;R.tier++;news('📈 '+R.name+' grew into a '+RTIER[R.tier][0].toLowerCase()+'.');
+    modal('📈 Regular: '+esc(R.name)+' is growing',`<div style="display:flex;gap:12px;align-items:center">${avatar(R.av,64)}<p><b>${esc(R.co)}</b> just became a <b>${RTIER[R.tier][0].toLowerCase()}</b>. ${esc(R.name.split(' ')[0])} says you're a big part of why.</p></div><p class="small">They'll buy about <b>${$m(regSpend(R)*52)}</b> a year from you now.</p>`,[{t:'🎉 Nice'}]);S.rep+=200*R.tier}}
+  if(R.loy<18)regGone(R)});
+ if(tot>0){earn(tot,'rev');led('cogs',tot-gp);if(S.wk){S.wk.rev+=tot;S.wk.gp+=gp}}
+ if(S.week>=S.regW.next&&S.regs.length<regMax()&&!MQ.length){S.regW.next=S.week+ri(14,30);regIntro(regNew())}
+ else if(S.week>=S.regW.ask&&S.regs.length&&!MQ.length&&!MG){S.regW.ask=S.week+ri(5,9);regAsk(pick(S.regs))}}
+const rP=R=>R.name.split(' ')[0];
+function regAsk(R){const f=rP(R),v=Math.round(regSpend(R)*rnd(1.5,3)/100)*100,head=`<div style="display:flex;gap:12px;align-items:center;margin-bottom:6px">${avatar(R.av,60)}<div><b>${esc(R.name)}</b><div class="mut small">${esc(R.co)} · ${RTIER[R.tier][0]} · loyalty ${Math.round(R.loy)}</div></div></div>`;
+ const L=(d)=>()=>{R.loy=clamp(R.loy+d,0,100)};const Q=[
+ ()=>['🚚 Saturday rush',`${f} just won a job that starts Monday and needs <b>${$m(v)}</b> of ${LN(R.line).n} delivered Saturday. The yard's closed Saturdays.`,[choice(`Open the yard (${$m(Math.round(v*0.06))} overtime)`,'good',()=>{spend(Math.round(v*0.06),'opex');earn(v,'rev');led('cogs',v*(1-mgOf(R)));L(8)()},'Loyalty +8'),choice('First thing Monday','sec',L(-5),'Loyalty −5')]],
+ ()=>['🏷️ "Match their price"',`${f} got a quote 5% under yours from ${esc((pick(S.rivals)||{n:'a rival'}).n)}. "${R.per==='penny-pincher'?'I\'m not leaving money on the table.':'Help me out here.'}"`,[choice(`Match it (−${$m(Math.round(regSpend(R)*52*0.05/4))} this quarter)`,'sec',()=>{spend(Math.round(regSpend(R)*52*0.05/4),'opex');L(R.per==='penny-pincher'?10:6)()},'Loyalty up'),choice('Meet in the middle','sec',()=>{spend(Math.round(regSpend(R)*52*0.025/4),'opex');L(R.per==='penny-pincher'?0:3)()},''),choice('Hold the price','bad',()=>{L(R.per==='penny-pincher'?-16:-7)();if(R.loy>=70)S.rep+=100},R.per==='penny-pincher'?'He really might walk':'Loyalty down')]],
+ ()=>['💳 More credit',`${f} wants their credit line raised to <b>${$m(v*3)}</b> to float a bigger job. ${R.rely>0.8?'They\'ve always paid on time.':'They\'ve been a little slow paying lately.'}`,[choice('Approve it','sec',()=>{L(7)();if(Math.random()>R.rely+0.15){const loss=v*3*rnd(0.4,0.8);spend(loss,'opex');news('💸 '+R.co+' got stuck on a job and couldn\'t pay. You wrote off '+$m(loss)+'.');R.loy=clamp(R.loy+5,0,100)}},'Risky if they\'re slow payers'),choice('Approve half','sec',L(1),''),choice('Decline','bad',L(-9),'Loyalty −9')]],
+ ()=>['😬 We messed up',`Our driver dropped the wrong color ${LN(R.line).n} on ${f}'s job site. The crew lost half a day.`,[choice(`Hot-shot the right load + credit ${$m(Math.round(v*0.1))}`,'good',()=>{spend(Math.round(v*0.1),'opex');L(6)()},'Loyalty +6'),choice('Swap it next run','sec',L(-6),'Loyalty −6'),choice('"Your PO said that color"','bad',()=>{L(-14)();if(typeof integ==='function')integ(-2)},'Loyalty −14')]],
+ ()=>['⚾ Little league',`${f}'s kid's team needs a sponsor for jerseys. ${$m(Math.round(800*infl()/100)*100)}, and your logo goes on the back.`,[choice('Sponsor them','good',()=>{spend(Math.round(800*infl()),'opex');L(9)();S.rep+=150},'Loyalty +9, reputation'),choice('Not this year','sec',L(-2),'')]],
+ ()=>['📐 Takeoff help',`${f} is bidding a big job and is buried. Can you run the takeoff for them by tomorrow?`,[choice('🎮 Do it myself','good',()=>setTimeout(()=>mgStart('take',{kind:tkKind(R.line)},(sc,skip)=>{const d=skip?2:Math.round((sc-0.4)*20);R.loy=clamp(R.loy+d,0,100);if(sc>=0.85){R.xp+=25}return `${f} ${d>=0?'appreciated it':'found mistakes'} (loyalty ${d>=0?'+':''}${d}).`}),80),'Accuracy matters'),choice('Have an estimator do it','sec',L(3),'Loyalty +3'),choice('Too busy','bad',L(-6),'Loyalty −6')]],
+ ()=>['🎯 A rival calls',`${esc((pick(S.rivals)||{n:'A rival'}).n)} offered ${f} 4% off everything for a year to switch.`,[choice(`Take ${f} to lunch`,'good',()=>{spend(150,'opex');L(R.loy>=60?6:-4)()},R.loy>=60?'They like you, this should work':'Might not be enough'),choice('Counter with 3% for a year','sec',()=>{spend(Math.round(regSpend(R)*52*0.03),'opex');L(10)()},'Costly but safe'),choice('Let them go if they want','bad',()=>{if(R.loy<55)regGone(R,`${f} took the deal.`);else L(-5)()},'')]]];
+ const q=pick(Q)();modal('🤝 Regular: '+q[0],head+`<p>${q[1]}</p>`,q[2])}
+function mgOf(R){return S.mg[R.line]||0.25}
+function regLunch(id){const R=S.regs.find(r=>r.id===id);if(!R)return;const c=Math.round(120*infl());if(S.week-R.lunch<8)return;spend(c,'opex');R.lunch=S.week;R.loy=clamp(R.loy+5,0,100);news('🍔 Lunch with '+R.name+'. ('+$m(c)+')');save();render()}
+function regHtml(){if(!regOk())return '';regInit();if(!S.regs.length)return `<div class="card"><h2>🤝 Regulars</h2><p class="mut small">No regulars yet. Keep the shelves full and your reputation up; contractors will start asking you to be their main yard.</p></div>`;
+ return `<div class="card"><div class="between"><h2 style="margin:0">🤝 Regulars</h2><span class="mut small">${S.regs.length}/${regMax()}</span></div><p class="mut small" style="margin:4px 0 8px">Your best customers. Keep them stocked and treat them right, and they grow into big accounts.</p>${S.regs.map(R=>{const lc=R.loy>=60?'good':R.loy>=35?'':'warn';
+  return `<div class="crow" style="display:flex;gap:10px;align-items:center;padding:8px 0">${avatar(R.av,46)}<div style="flex:1;min-width:0"><div class="between small"><b>${esc(R.name)}</b><span class="mut">${$m(regSpend(R)*52)}/yr</span></div><div class="mut small">${R.ic} ${esc(R.co)} · ${RTIER[R.tier][0]}</div>
+  <div class="small">Loyalty <b class="${lc}">${Math.round(R.loy)}</b>${R.tier<RTIER.length-1?` · growth ${Math.round(R.xp)}%`:' · top tier'}</div><div class="bar thin"><i style="width:${R.loy}%"></i></div></div><button class="btn sec sm" ${S.week-R.lunch<8?'disabled':''} onclick="regLunch(${R.id})">🍔</button></div>`}).join('')}<p class="mut small">🍔 Lunch: +5 loyalty, once every 2 months each.</p></div>`}
+const _wkREG=weekly;weekly=function(){_wkREG();try{regWeek()}catch(e){console.error(e)}};
+{const _bh=businessHtml;businessHtml=function(){return regHtml()+_bh()}}
+
+/* ===== P47: Mega projects — huge bids that force a multi-sheet takeoff sprint ===== */
+const MEGAJ=[
+ {n:'Riverside Ranch subdivision',d:'48 new homes, every backyard fenced. The builder sent three typical lot plans; multiply out and the job is enormous.',ph:[['wood','U',1],['vinyl','L',1],['wood','U',1]],lab:['Lot type A','Lot type B','Lot type C']},
+ {n:'Air base perimeter upgrade',d:'Miles of security chain link with drive and walk gates. Three sections of the perimeter, each with its own gates.',ph:[['chain','straight',3],['chain','straight',3],['chain','L',2.2]],lab:['North line','East line','Motor pool']},
+ {n:'County fairgrounds rebuild',d:'Livestock barns, the grandstand and a new vendor deck. Chain link, ornamental and a big wood deck.',ph:[['chain','U',1.8],['orn','straight',2.5],['dwood',null,1]],lab:['Livestock pens','Grandstand front','Vendor deck']},
+ {n:'Lakeside resort',d:'Cabins with composite decks, plus ornamental fence around the pool and the marina walk.',ph:[['dcomp',null,1],['orn','U',1.4],['dcomp',null,1]],lab:['Cabin deck A','Pool enclosure','Cabin deck B']},
+ {n:'School district fence replacement',d:'Every elementary school in the district gets new chain link playground fence over summer break. Hard deadline.',ph:[['chain','U',1.6],['chain','L',1.8],['chain','U',1.6]],lab:['Lincoln Elementary','Garfield Elementary','Roosevelt Elementary']},
+ {n:'Solar farm perimeter',d:'A utility-scale solar farm needs agricultural-grade perimeter on three parcels.',ph:[['chain','straight',3],['chain','L',2.6],['chain','straight',3]],lab:['Parcel 1','Parcel 2','Parcel 3']}];
+MGDEF.mega={ic:'🏗️',n:'Mega Takeoff Sprint',hint:'Three plan sheets, one clock. Count each sheet and submit to move to the next. Under-count and you under-bid the whole job.',why:'Mega project bid'};
+const megaSec=()=>150+(typeof legLv==='function'?legLv('pencil')*25:0);
+GAMES.mega={start(M){const J=M.ctx.J;M.J=J;M.i=0;M.res=[];M.dur=J.ph.length*megaSec();this.load(M)},
+ load(M){const [k,sh,big]=M.J.ph[M.i];M.k=k;M.T=TKT[k];M.v={};M.shape=sh;M.big=big;if(k[0]==='d')GAMES.take.genDeck(M);else GAMES.take.genFence(M);this.draw(M)},
+ draw(M){GAMES.take.draw(M);const a=document.getElementById('mgA');a.insertAdjacentHTML('afterbegin',`<div class="megaph">${M.J.lab.map((l,i)=>`<span class="${i===M.i?'on':i<M.i?'done':''}">${i<M.i?'✓ ':''}${esc(l)}</span>`).join('')}</div>`);
+  document.getElementById('mgF').innerHTML=`<button class="btn" onclick="GAMES.mega.finish(MG)">${M.i<M.J.ph.length-1?'Submit sheet '+(M.i+1)+' →':'✅ Submit the bid'}</button>`},
+ frame(M){mgTime(M.dur-M.t)},
+ score(M){let sum=0;const rows=M.T.f.map(k=>{const a=M.ans[k],v=M.v[k];const err=v==null?Infinity:Math.abs(v-a);const s=err===0?1:err<=Math.max(1,a*0.02)?0.8:err<=Math.max(2,a*0.1)?0.4:0;sum+=s;return `<tr><td>${TKF[k][0]}</td><td style="text-align:right">${v==null?'–':v}</td><td style="text-align:right"><b>${a}</b></td><td>${s===1?'✅':s>0?'🟡':'❌'}</td></tr>`}).join('');
+  return {s:sum/M.T.f.length,rows}},
+ finish(M){if(M.done)return;const out=M.t>=M.dur;M.res.push(this.score(M));
+  if(!out&&M.i<M.J.ph.length-1){M.i++;mgSfx('ok');this.load(M);return}
+  while(M.res.length<M.J.ph.length)M.res.push({s:0,rows:'<tr><td colspan="4" class="warn">Ran out of time</td></tr>'});
+  const sc=M.res.reduce((a,r)=>a+r.s,0)/M.res.length;
+  mgEnd(sc,M.res.map((r,i)=>`<details ${i===0?'open':''} style="text-align:left"><summary class="small"><b>${esc(M.J.lab[i])}</b> · ${Math.round(r.s*100)}%</summary><table class="tktab"><tr><th>Item</th><th>You</th><th>Takeoff</th><th></th></tr>${r.rows}</table></details>`).join(''))}};
+function megaInit(){if(S.megaNext==null)S.megaNext=(S.gw0==null?S.week:S.gw0)+ri(60,80);return S}
+function megaVal(){const L=S.led[fyOf(S.week)-1]||S.led[fyOf(S.week)]||{rev:0};return Math.round(Math.max(650e3*infl(),L.rev*0.22)*rnd(0.85,1.3)/1e4)*1e4}
+function megaOffer(){const J=pick(MEGAJ),V=megaVal(),wk=ri(12,22);S.megaNext=S.week+ri(55,95);
+ const apply=(sc,skip)=>{const est=S.staff.filter(s=>s.rk==='estimator').length;if(skip)sc=clamp(0.38+est*0.06,0.3,0.62);
+  const win=clamp(0.22+sc*0.6+Math.min(0.15,S.rep/200e3),0.1,0.92);const mg=sc>=0.85?0.25:sc>=0.65?0.19:sc>=0.45?0.12:-0.06;
+  if(Math.random()>win){news('🏗️ We lost the '+J.n+' bid.');S.rep+=Math.round(sc*400);return `Lost the bid (${Math.round(win*100)}% shot). ${sc>=0.7?'The builder said the numbers were sharp. Next time.':'A rival came in tighter.'}`}
+  S.mega={n:J.n,V,wk,left:wk,mg,sc};news('🏗️ WON the '+J.n+': '+$m(V)+' over '+wk+' weeks.');S.rep+=1500;
+  return `Won it! ${$m(V)} over ${wk} weeks${mg<0?'. But the numbers look too good. Did we under-count?':' at about '+Math.round(mg*100)+'% margin.'}`};
+ modal('🏗️ Mega Project: '+J.n,`<p>${J.d}</p><div class="kgrid"><div><b>${$m(V)}</b><span>contract value</span></div><div><b>${wk} wks</b><span>to deliver</span></div><div><b>${J.ph.length}</b><span>plan sheets</span></div></div><p class="small">The bid is due Friday. Nail the takeoff and you win it at a healthy margin. Under-count and you'll win it at a loss.</p><p class="mut small">Takeoff Sprint · ${J.ph.length} sheets on one ${Math.round(J.ph.length*megaSec()/60)}-minute clock.</p>`,
+  [{t:'🎮 Run the takeoff myself',c:'go',f:()=>setTimeout(()=>mgStart('mega',{J},apply),80)},{t:'Let the estimators bid it',c:'sec',f:()=>{const t=apply(0.5,true);modal('🏗️ Mega Project: '+J.n,`<p>${t}</p>`,[{t:'OK'}])}},{t:'Pass on it',c:'sec',f:()=>news('🏗️ Passed on the '+J.n+'.')}])}
+function megaWeek(){if(!S||S.week<(S.gw0==null?0:S.gw0)+40)return;megaInit();const X=S.mega;
+ if(X){const r=X.V/X.wk;earn(r,'rev');led('cogs',r*(1-X.mg));X.left--;
+  if(X.left===Math.floor(X.wk/2)&&X.mg<0)modal('🏗️ Mega Project: trouble',`<p>Halfway through the <b>${esc(X.n)}</b>, the truth is out: the takeoff was short and we bid it under cost. Every load we ship loses money.</p><p class="mut small">Lesson learned. Count twice, bid once.</p>`,[{t:'Grit our teeth'}]);
+  if(X.left<=0){S.mega=null;S.megaDone=(S.megaDone||0)+1;const rp=X.mg>0?3000:500;S.rep+=rp;news('🏁 Finished the '+X.n+'.');
+   modal('🏁 Mega Project: done',`<p>The last load for the <b>${esc(X.n)}</b> just left the yard.</p><div class="kgrid"><div><b>${$m(X.V)}</b><span>in sales</span></div><div><b class="${X.mg>0?'good':'warn'}">${$m(X.V*X.mg)}</b><span>gross profit</span></div><div><b>+${fmt(rp)}</b><span>reputation</span></div></div>`,[{t:'🎉 On to the next'}])}
+  return}
+ if(S.week>=S.megaNext&&!MQ.length&&!MG)megaOffer()}
+function megaHtml(){const X=S.mega;if(!X)return '';const p=1-X.left/X.wk;return `<div class="card"><div class="between"><h2 style="margin:0">🏗️ ${esc(X.n)}</h2><span class="chip2">${X.left} wks left</span></div><div class="bar" style="margin:8px 0"><i style="width:${p*100}%"></i></div><div class="small">${$m(X.V)} contract · ${X.mg>=0?'about '+Math.round(X.mg*100)+'% margin':'<span class="warn">bid under cost</span>'}</div></div>`}
+const _wkMEGA=weekly;weekly=function(){_wkMEGA();try{megaWeek()}catch(e){console.error(e)}};
+{const _bh=businessHtml;businessHtml=function(){return megaHtml()+_bh()}}
+document.head.insertAdjacentHTML('beforeend','<style>.megaph{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}.megaph span{font-size:11px;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.08)}.megaph span.on{background:#ffb020;color:#2a1a00;font-weight:800}.megaph span.done{color:#7be0a8}</style>');
+
+/* ===== P48: Prestige — sell the company, bank legacy points, start a new yard stronger ===== */
+const LEGK='yd_legacy';
+const LPERK={cash:{n:'💵 Seed money',d:'+$60K starting cash per level',c:[3,6,9,13,18]},rep:{n:'⭐ Known name',d:'+1,500 starting reputation per level',c:[3,6,9,13,18]},
+ kp:{n:'🧠 Head start',d:'+12 starting knowledge points per level',c:[3,6,9,13,18]},pencil:{n:'📐 Sharp pencil',d:'+30s on takeoffs, +25s per mega-project sheet, per level',c:[4,8,14]},
+ friend:{n:'🤝 Old friend',d:'Your best regular follows you to every new yard',c:[8]}};
+function legGet(){try{return Object.assign({pts:0,perks:{},hof:[],carry:null},JSON.parse(localStorage.getItem(LEGK)||'{}'))}catch(e){return {pts:0,perks:{},hof:[],carry:null}}}
+function legPut(L){try{localStorage.setItem(LEGK,JSON.stringify(L))}catch(e){}}
+function legLv(k){return legGet().perks[k]||0}
+function legBuy(k){const L=legGet(),P=LPERK[k],lv=L.perks[k]||0;if(lv>=P.c.length)return;const c=P.c[lv];if(L.pts<c)return;L.pts-=c;L.perks[k]=lv+1;legPut(L);render()}
+function coValue(){const fy=fyOf(S.week);const last=S.led[fy-1]||{rev:0},cur=S.led[fy]||{rev:0};const wkIn=Math.max(1,(S.week-9)%52||52);const rev=Math.max(last.rev,cur.rev*52/wkIn);
+ const inv=Object.values(S.inv||{}).reduce((a,I)=>a+(I.u||0)*(I.c||0),0);const br=S.corp?S.corp.br.length:0;
+ return Math.max(0,Math.round((S.money+rev*0.6+inv+br*250e3+(S.regs||[]).reduce((a,R)=>a+regSpend(R)*52*0.3,0))/1e4)*1e4)}
+const legYrs=()=>(S.week-(S.gw0==null?9:S.gw0))/52;
+function legPts(v){return Math.max(1,Math.floor(Math.sqrt(v/50e3)))}
+function legCanSell(){return legYrs()>=5||coValue()>=10e6}
+function legSell(){if(!legCanSell())return;const v=coValue(),p=legPts(v);
+ modal('🏆 Legacy: sell the company?',`<p>A buyer will pay <b>${$m(v)}</b> for ${esc(S.founder.studio)}.</p><p>You'll bank <b>${p} legacy points</b> to spend on permanent perks, then start a brand-new yard from scratch.</p><p class="warn small">This ends this company for good. The save is replaced by your new start.</p>`,
+  [{t:'Not yet',c:'sec'},{t:'🏆 Sell and start over',c:'go',f:()=>legDoSell(v,p)}])}
+function legDoSell(v,p){const L=legGet();L.pts+=p;L.hof.unshift({n:S.founder.name,s:S.founder.studio,y:Math.round(legYrs()*10)/10,v,p,end:yearOf(S.week)});L.hof=L.hof.slice(0,10);
+ const best=(S.regs||[]).slice().sort((a,b)=>(b.tier*100+b.loy)-(a.tier*100+a.loy))[0];L.carry=best?{name:best.name,co:best.co,av:best.av,ic:best.ic,per:best.per,bio:best.bio,tier:best.tier,line:best.line}:L.carry;legPut(L);
+ try{localStorage.removeItem(SAVE)}catch(e){}const mn=document.getElementById('main');if(mn)mn.innerHTML='';if(typeof timer!=='undefined'&&timer)clearInterval(timer);setTimeout(()=>{try{localStorage.removeItem(SAVE)}catch(e){}S=null;MQ.length=0;if(typeof timer!=='undefined'&&timer)clearInterval(timer);const h=document.getElementById('hud');if(h)h.innerHTML='';const d=document.getElementById('dock');if(d)d.innerHTML='';try{officeShow(false)}catch(e){}try{showModal()}catch(e){}render()},60)}
+function legHtml(){const can=legCanSell(),v=coValue(),L=legGet();return `<div class="card"><h2>🏆 Legacy</h2><p class="small">Sell the company, bank legacy points, and start a new yard with permanent perks.${L.hof.length?` You've sold <b>${L.hof.length}</b> compan${L.hof.length>1?'ies':'y'} so far.`:''}</p>
+ <div class="kgrid"><div><b>${$m(v)}</b><span>company value</span></div><div><b>${legPts(v)}</b><span>points if you sell</span></div></div>
+ ${can?`<button class="btn go" style="width:100%;margin-top:8px" onclick="legSell()">🏆 Sell the company</button>`:`<p class="mut small" style="margin-top:8px">Unlocks after 5 years in business (${Math.max(0,5-legYrs()).toFixed(1)} to go) or once the company is worth $10M.</p>`}</div>`}
+function legShop(){const L=legGet();if(!L.pts&&!Object.keys(L.perks).length&&!L.hof.length)return '';
+ return `<div class="card" style="border:1px solid rgba(255,208,102,.35)"><div class="between"><h2 style="margin:0">🏆 Legacy perks</h2><span class="chip2">${L.pts} pts</span></div><p class="mut small">Bought perks apply to every new company.</p>
+ ${Object.keys(LPERK).map(k=>{const P=LPERK[k],lv=L.perks[k]||0,mx=lv>=P.c.length,c=P.c[lv];return `<div class="between small crow" style="padding:6px 0"><span style="flex:1"><b>${P.n}</b> ${P.c.length>1?`<span class="mut">Lv ${lv}/${P.c.length}</span>`:lv?'<span class="good">owned</span>':''}<br><span class="mut">${P.d}</span></span>${mx?'<span class="chip2">MAX</span>':`<button class="btn ${L.pts>=c?'go':'sec'} sm" ${L.pts>=c?'':'disabled'} onclick="legBuy('${k}')">${c} pts</button>`}</div>`}).join('')}
+ ${L.hof.length?`<h3 style="margin-top:10px">Hall of fame</h3>${L.hof.slice(0,5).map(h=>`<div class="between small"><span>${esc(h.s)} <span class="mut">(${esc(h.n)}, ${h.y} yrs)</span></span><b>${$m(h.v)}</b></div>`).join('')}`:''}</div>`}
+{const _sh=setupHtml;setupHtml=function(){const h=_sh.apply(this,arguments);return (SET&&SET.step===0?legShop():'')+h}}
+{const _ng=newGame;newGame=function(f){const r=_ng.apply(this,arguments);const L=legGet(),P=L.perks;S.money+=60e3*(P.cash||0);S.rep+=1500*(P.rep||0);S.rp=(S.rp||0)+12*(P.kp||0);if(P.friend&&L.carry)S.legCarry=L.carry;if(L.hof.length)S.legRun=L.hof.length+1;return r}}
+{const _ts=GAMES.take.start;GAMES.take.start=function(M){_ts.apply(this,arguments);M.dur+=30*legLv('pencil')}}
+const _wkLEG=weekly;weekly=function(){_wkLEG();try{if(S.legCarry&&S.week>=(S.gw0==null?S.week:S.gw0)+3&&!MQ.length){regInit();const R=regNew(S.legCarry);S.legCarry=null;regIntro(R)}}catch(e){console.error(e)}};
+{const _bh=businessHtml;businessHtml=function(){return _bh()+legHtml()}}
+
+/* ===== P49: Manager's desk — real branch-manager calls; less auto-pilot ===== */
+// Routine calls are only handed off if the player turns it on, and only to an assistant/ops manager.
+delegateWho=function(){if(!S||!S.dele)return null;const m=S.staff.find(s=>s.rk==='asstmgr')||S.staff.find(s=>s.rk==='opsmgr');return m?m.name.split(' ')[0]:null};
+function deleToggle(v){S.dele=!!v;save();render()}
+{const _ih=inboxHtml;inboxHtml=function(){const m=S.staff.find(s=>s.rk==='asstmgr')||S.staff.find(s=>s.rk==='opsmgr');
+ const t=m?`<div class="card"><label class="between small"><span>🧑‍💼 Let <b>${esc(m.name.split(' ')[0])}</b> handle small routine calls<br><span class="mut">Manager's calls always come to you.</span></span><input type="checkbox" ${S.dele?'checked':''} onchange="deleToggle(this.checked)"></label></div>`:'';return t+_ih()}}
+const mdOn=()=>S&&!S.ceo&&!(S.corp&&S.corp.hq)&&S.week>=(S.gw0==null?0:S.gw0)+3;
+const wkRev=()=>Math.max(15e3,(S.wk&&S.wk.rev)||0);
+const mdR=(x,s=100)=>Math.round(x/s)*s;
+const mdCrew=()=>S.staff.filter(s=>!s.founder&&!s.vac);
+const mor=(L,d)=>L.forEach(s=>s.morale=clamp((s.morale||60)+d,0,100));
+const mdLines=()=>S.lines.filter(k=>S.inv[k]);
+const topLine=()=>mdLines().sort((a,b)=>((S.dem&&S.dem[b])||0)*unitPrice(b)-((S.dem&&S.dem[a])||0)*unitPrice(a))[0];
+const MDESK=[
+ {id:'sat',ok:()=>{const m=(S.week-9)%52;return m>=4&&m<=20},f:()=>{const c=mdR(mdCrew().length*220*infl());return ['Saturday hours',`Spring's here and contractors keep asking why we're closed Saturdays. Opening means paying the crew weekend time for the next 3 months.`,
+  [choice(`Open all day Saturdays (~${$m(c)}/wk)`,'good',()=>{spend(c*12,'opex');mgSetB('counter',1.12,12);mor(mdCrew(),-5)},'Counter sales +12%, crew morale −5'),
+   choice(`Saturday mornings only (~${$m(c/2)}/wk)`,'sec',()=>{spend(c*6,'opex');mgSetB('counter',1.06,12);mor(mdCrew(),-1)},'Counter sales +6%'),
+   choice('Ignore it, stay closed','sec',()=>{S.rep=Math.max(0,S.rep-150)},'Some contractors go elsewhere on weekends')]]}},
+ {id:'raise',ok:()=>mdCrew().length>=2,f:()=>{const s=pick(mdCrew().filter(x=>!x.mgr)||mdCrew())||pick(mdCrew());const f=s.name.split(' ')[0];const sal=s.salary||3500;return ['A raise request',`<b>${esc(s.name)}</b> (${esc((ROLES.find(r=>r.k===s.rk)||{n:s.rk}).n)}) has an offer from a rival yard and wants a raise to stay. ${f} has been here ${Math.max(1,Math.round((S.week-(s.hiredW||S.week))/52))} year(s).`,
+  [choice(`Match it: +10% (${$m(sal*0.1)}/mo)`,'good',()=>{s.salary=Math.round(sal*1.1);s.morale=clamp((s.morale||60)+18,0,100)},f+' stays and is fired up'),
+   choice('+4% and a better title','sec',()=>{s.salary=Math.round(sal*1.04);s.morale=clamp((s.morale||60)+(Math.random()<0.6?8:-10),0,100)},'Might be enough'),
+   choice('Ignore it, no raise this year','bad',()=>{s.morale=clamp((s.morale||60)-22,0,100);mor(mdCrew().filter(x=>x!==s),-3)},'Morale hit, and the crew notices')]]}},
+ {id:'truckload',ok:()=>mdLines().length>0,f:()=>{const k=topLine();const n=Math.max(20,Math.round((S.tgt[k]||40)*1.5));const est=Math.round(n*unitPrice(k));return ['Truckload buy',`The ${LN(k).n} mill rep offers <b>8% off</b> if we take a full truckload now: about ${fmt(n)} units, roughly ${$m(est)}. It ties up cash and yard space for a couple months.`,
+  [choice('Take the full truck','sec',()=>{buyStock(k,n,true,0.08)},'Cheaper stock, less cash'),
+   choice('Half a truck at 4% off','sec',()=>{buyStock(k,Math.round(n/2),true,0.04)},''),
+   choice('Pass on it','sec',()=>{},'Keep the cash')]]}},
+ {id:'dead',ok:()=>mdLines().some(k=>S.inv[k].u>(S.tgt[k]||0)*2.5&&S.inv[k].u>20),f:()=>{const k=mdLines().filter(k=>S.inv[k].u>(S.tgt[k]||0)*2.5&&S.inv[k].u>20).sort((a,b)=>S.inv[b].u*S.inv[b].c-S.inv[a].u*S.inv[a].c)[0];const I=S.inv[k];const v=I.u*I.c*0.5;return ['Dead stock',`We're sitting on way too much ${LN(k).n}: ${fmt(I.u)} units, about ${$m(I.u*I.c)} at cost, gathering dust and taking up rack space.`,
+  [choice(`Blow out half at cost (${$m(v)} cash back)`,'sec',()=>{const u=Math.floor(I.u/2);I.u-=u;earn(u*I.c,'rev');led('cogs',u*I.c);news('🏷️ Cleared '+fmt(u)+' units of '+LN(k).n+' at cost.')},'Cash back, no profit'),
+   choice('Contractor promo: 10% off for 2 months','sec',()=>{S.mg[k]=Math.max(0.05,S.mg[k]-0.1);S.mdPromo={k,until:S.week+8}},'Moves faster at thinner margin'),
+   choice('Ignore it, hold it','sec',()=>{},'Carrying cost and space')]]}},
+ {id:'pastdue',ok:()=>S.accts.length>2,f:()=>{const A=pick(S.accts);const owe=mdR(wkRev()*rnd(0.2,0.5));return ['Past due, wants more',`<b>${esc(A.name)}</b> is ${ri(45,75)} days past due on ${$m(owe)} and just called in another order. They say a builder is slow-paying them.`,
+  [choice('Ship it on account','sec',()=>{A.rel=Math.min(100,A.rel+8);if(Math.random()<0.25){spend(owe,'opex');news('💸 '+A.name+' went under. Wrote off '+$m(owe)+'.')}},'Keeps them happy. 1 in 4 chance they never pay'),
+   choice('Cash on delivery until they catch up','good',()=>{A.rel=Math.max(0,A.rel-4)},'Safe, slightly annoyed'),
+   choice('Ignore it, hold their orders','bad',()=>{A.rel=Math.max(0,A.rel-14)},'They may take their business elsewhere')]]}},
+ {id:'forklift',ok:()=>true,f:()=>{const c=mdR(4200*infl());return ['Forklift trouble',`The main forklift is leaking hydraulic fluid and the mast is chattering. The mechanic can fix it right (2 days) or patch it today.`,
+  [choice(`Fix it right (${$m(c)})`,'good',()=>{spend(c,'opex')},'Done properly'),
+   choice(`Patch it (${$m(c/4)})`,'sec',()=>{spend(c/4,'opex');if(Math.random()<0.35){mgSetB('dlv',0.75,4);news('🔧 The patched forklift died mid-load. Deliveries slowed for a month.')}},'35% chance it fails anyway'),
+   choice('Ignore it, keep running it','bad',()=>{mgSetB('dlv',0.9,8);if(Math.random()<0.2){spend(c*3,'opex');mor(mdCrew(),-8);news('🚨 Forklift mast failed in the yard. Nobody hurt, but it was close.')}},'Slower loading; could get ugly')]]}},
+ {id:'safety',ok:()=>mdCrew().length>=3,f:()=>{const s=pick(mdCrew());return ['Near miss in the yard',`A bundle of posts slid off the forks while <b>${esc(s.name)}</b> was unloading. Nobody got hurt, but it was close.`,
+  [choice(`Safety stand-down for the whole crew (${$m(mdR(mdCrew().length*90))})`,'good',()=>{spend(mdR(mdCrew().length*90),'opex');mor(mdCrew(),4);mgSetB('cb',0.85,8)},'Morale up, fewer mistakes'),
+   choice(`Write up ${s.name.split(' ')[0]}`,'sec',()=>{s.morale=clamp((s.morale||60)-15,0,100)},'Sends a message'),
+   choice('Ignore it, back to it','bad',()=>{if(Math.random()<0.25){spend(mdR(wkRev()*0.3),'opex');mor(mdCrew(),-10);news('🚑 A yard injury. Workers comp and lost time.')}},'Risky')]]}},
+ {id:'truck',ok:()=>S.accts.length>=2&&S.fleet.length>0,f:()=>{const [A,B]=[...S.accts].sort(()=>Math.random()-0.5);return ['Two jobs, one truck',`<b>${esc(A.name)}</b> and <b>${esc(B.name)}</b> both need a load on site at 7am Monday. We've only got one truck free.`,
+  [choice(`${A.name} first`,'sec',()=>{A.rel=Math.min(100,A.rel+5);B.rel=Math.max(0,B.rel-7)},''),choice(`${B.name} first`,'sec',()=>{B.rel=Math.min(100,B.rel+5);A.rel=Math.max(0,A.rel-7)},''),
+   choice(`Rent a truck (${$m(mdR(650*infl()))})`,'good',()=>{spend(mdR(650*infl()),'opex');A.rel=Math.min(100,A.rel+3);B.rel=Math.min(100,B.rel+3)},'Both happy'),choice('Ignore it, first come first served','bad',()=>{A.rel=Math.max(0,A.rel-6);B.rel=Math.max(0,B.rel-6)},'Both annoyed')]]}},
+ {id:'feud',ok:()=>mdCrew().length>=3,f:()=>{const [a,b]=[...mdCrew()].sort(()=>Math.random()-0.5);return ['Crew drama',`<b>${esc(a.name)}</b> and <b>${esc(b.name)}</b> got into it in the break room. Now nobody wants to work their shift.`,
+  [choice('Sit them both down yourself','good',()=>{mor([a,b],8);mor(mdCrew(),2)},'Takes your afternoon, clears the air'),
+   choice('Split their shifts','sec',()=>{mgSetB('counter',0.97,4)},'Calmer, a bit less efficient'),
+   choice('Ignore it, they\'re adults','bad',()=>{mor([a,b],-12);mor(mdCrew(),-3)},'It festers')]]}},
+ {id:'price',ok:()=>true,f:()=>{const k=topLine();return ['Cost increase',`Our ${LN(k).n} supplier just raised cost 6%, effective now. Every rival is getting the same letter.`,
+  [choice('Raise our prices now (+3 pts margin)','sec',()=>{S.mg[k]=Math.min(0.6,S.mg[k]+0.03);S.accts.forEach(a=>a.rel=Math.max(0,a.rel-1.5))},'Protects margin, contractors grumble'),
+   choice('Hold prices 30 days, then raise','good',()=>{spend(mdR(wkRev()*0.04*4),'opex');S.rep+=250},'Costs a month of margin, builds goodwill'),
+   choice('Ignore it, eat the cost','bad',()=>{spend(mdR(wkRev()*0.04*12),'opex')},'Margin quietly shrinks for months')]]}},
+ {id:'temp',ok:()=>{const m=(S.week-9)%52;return m>=8&&m<=26},f:()=>{const c=mdR(1100*infl());return ['Peak season help',`The yard can't keep up. Trucks are leaving late and the counter line is out the door.`,
+  [choice(`Hire 2 temps for 10 weeks (~${$m(c*2)}/wk)`,'good',()=>{spend(c*20,'opex');mgSetB('dlv',1.15,10);mgSetB('counter',1.06,10)},'Deliveries +15%, counter +6%'),
+   choice('Overtime for the regulars','sec',()=>{spend(c*8,'opex');mgSetB('dlv',1.08,10);mor(mdCrew(),-6)},'Cheaper, crew gets tired'),
+   choice('Ignore it, ride it out','bad',()=>{mgSetB('dlv',0.92,8);S.rep=Math.max(0,S.rep-200)},'Late loads, unhappy customers')]]}},
+ {id:'return',ok:()=>true,f:()=>{const v=mdR(rnd(900,2600)*infl());return ['A tough return',`A homeowner wants a full refund on ${$m(v)} of special-order material. It's cut to length and can't be restocked. They're already threatening a bad review.`,
+  [choice('Full refund, keep them happy','sec',()=>{spend(v,'opex');S.rep+=120},'Costs money, reputation +'),
+   choice('Refund minus a 25% restocking fee','good',()=>{spend(v*0.75,'opex')},'Fair and by the book'),
+   choice('Ignore it, special orders are final','bad',()=>{S.rep=Math.max(0,S.rep-300)},'Bad review incoming')]]}},
+ {id:'shrink',ok:()=>mdLines().length>0&&!(S.mdLock>S.week),f:()=>{const k=pick(mdLines());const I=S.inv[k];const u=Math.max(2,Math.round(I.u*0.04));return ['Count is off',`The cycle count shows <b>${fmt(u)} units of ${LN(k).n}</b> missing, about ${$m(u*I.c)}. Could be mis-picks, could be walking out the gate.`,
+  [choice(`Lock down the yard gate (${$m(mdR(2500*infl()))})`,'good',()=>{I.u=Math.max(0,I.u-u);spend(mdR(2500*infl()),'opex');S.mdLock=S.week+52},'Cameras and a sign-out sheet'),
+   choice('Re-train the crew on picking','sec',()=>{I.u=Math.max(0,I.u-u);mor(mdCrew(),-2);mgSetB('cb',0.92,6)},''),
+   choice('Ignore it, write it off','bad',()=>{I.u=Math.max(0,I.u-u*2)},'It keeps happening')]]}}];
+function mdWeek(){if(!mdOn())return;if(S.mdPromo&&S.week>=S.mdPromo.until){const k=S.mdPromo.k;S.mg[k]=Math.min(0.6,S.mg[k]+0.1);news('🏷️ The '+LN(k).n+' promo ended; prices are back to normal.');S.mdPromo=null}
+ if(S.mdNext==null)S.mdNext=S.week+2;if(S.week<S.mdNext)return;S.mdNext=S.week+ri(2,3);
+ S.mdSeen=S.mdSeen||{};const pool=MDESK.filter(e=>e.ok()&&S.week-(S.mdSeen[e.id]||-99)>=16);if(!pool.length)return;const E=pick(pool);S.mdSeen[E.id]=S.week;
+ const [t,h,b]=E.f();modal('🗂️ Manager\'s call: '+t,`<p>${h}</p>`,b)}
+const _wkMD=weekly;weekly=function(){_wkMD();try{mdWeek()}catch(e){console.error(e)}};
+// Manager's calls are yours: never auto-handled, even if routine hand-off is on
+{const _ia=inboxAdd;inboxAdd=function(title,html,btns){if(/Manager's call/.test(title)){const d=S.dele;S.dele=false;try{return _ia(title,html,btns)}finally{S.dele=d}}return _ia(title,html,btns)}}
+
+/* ===== P50: Branching decisions — choices that change the future ===== */
+// Permanent effects: S.bPerm[k] multiplies counter/dlv/cb buffs and demand (dem, dem_<line>). S.bOpex = recurring weekly costs.
+{const _m=mgb;mgb=function(k){return _m(k)*((S&&S.bPerm&&S.bPerm[k])||1)}}
+{const _ld=lineDemand;lineDemand=function(k){const P=(S&&S.bPerm)||{};return _ld(k)*(P.dem||1)*(P['dem_'+k]||1)}}
+function bp(k,m){S.bPerm=S.bPerm||{};S.bPerm[k]=(S.bPerm[k]||1)*m}
+function bOpex(n,amt,wks){S.bOpex=S.bOpex||[];S.bOpex.push({n,amt,until:wks?S.week+wks:1e9})}
+function bLater(id,st,wks,d){S.brq=S.brq||[];S.brq.push({id,st,at:S.week+wks,d:d||{}})}
+function bFlag(k,v){S.bf=S.bf||{};S.bf[k]=v===undefined?true:v}
+const bRiv=()=>S.rivals.slice().sort((a,b)=>rivalW(b)-rivalW(a))[0]||{n:'a rival',skill:6,size:1};
+const W$=(n)=>mdR(wkRev()*n,1000);
+const bAcc=()=>S.accts.slice().sort((a,b)=>(b.spend||0)-(a.spend||0))[0];
+const BCH={
+ rivalsale:{ok:()=>S.rivals.length>0,s:{
+  0:d=>{const R=bRiv();d.r=R.n;return ['A rival is for sale',`The owner of <b>${esc(R.n)}</b> is retiring and quietly shopping the business. His kids don't want it. Whoever moves first gets first crack.`,[
+   choice(`Buy the whole company (${$m(W$(20))})`,'good',()=>{if(S.money<W$(20)){news('🏦 Not enough cash to close the deal.');return}spend(W$(20),'oth');R.size*=0.35;bp('dem',1.08);bFlag('ateRival',R.n);bLater('rivalsale',1,26,d)},'Big cash, big market share'),
+   choice(`Buy just their customer list (${$m(W$(6))})`,'sec',()=>{spend(W$(6),'oth');addAccts(S.types,6);bp('dem',1.03);bLater('rivalsale',2,20,d)},'6 new accounts'),
+   choice(`Hire away their top salesman (${$m(W$(1))} signing bonus)`,'sec',()=>{spend(W$(1),'opex');bLater('rivalsale',3,12,d)},'Cheap, a gamble'),
+   choice('Ignore it, let someone else buy it','bad',()=>bLater('rivalsale',4,30,d),'Who buys it matters')]]},
+  1:d=>['Two crews, one yard',`Six months after the buyout, the old ${esc(d.r)} crew still does things their way. Their yard lead is good, but he and your people clash daily.`,[
+   choice('Make him a lead and blend the crews','good',()=>{bp('counter',1.04);mor(mdCrew(),-3)},'Painful now, stronger later'),
+   choice('Keep the crews separate','sec',()=>{bOpex('Separate crews',W$(0.01))},'Ongoing cost'),
+   choice('Let him go, your way or the highway','bad',()=>{mor(mdCrew(),2);S.accts.slice(-4).forEach(a=>a.rel=Math.max(0,a.rel-15))},'Some of their customers follow him out'),
+   choice('Ignore it, they\'ll figure it out','bad',()=>{mgSetB('cb',1.2,16)},'Mistakes pile up')]],
+  2:d=>['The old customers test you',`The contractors from ${esc(d.r)}'s list are calling around. They want the prices they used to get, which were 4% under yours.`,[
+   choice('Match their old prices for a year','sec',()=>{bOpex('Price match for old accounts',W$(0.005),52);S.accts.slice(-6).forEach(a=>a.rel=Math.min(100,a.rel+15))},'They stick'),
+   choice('Meet them halfway','sec',()=>{bOpex('Partial price match',W$(0.0025),52)},''),
+   choice('Win them on service, not price','good',()=>{if(Math.random()<0.5){S.accts.slice(-6).forEach(a=>a.rel=Math.min(100,a.rel+10));S.rep+=300}else{S.accts.splice(-3,3);news('📉 Half the new accounts drifted away.')}},'Coin flip'),
+   choice('Ignore it, prices are prices','bad',()=>{S.accts.splice(-5,5);bp('dem',0.98)},'Most of them leave')]],
+  3:d=>{const good=Math.random()<0.65;return good?['The salesman delivers',`The salesman you poached from ${esc(d.r)} brought a stack of contractors with him. He wants a bigger commission to keep it going.`,[
+   choice('Give him 2% more commission','good',()=>{addAccts(S.types,5);bOpex('Star rep commission',W$(0.004))},'+5 accounts, ongoing cost'),
+   choice('Give him a territory to build','sec',()=>{addAccts(S.types,3);bp('dem',1.02)},''),
+   choice('Hold his pay where it is','bad',()=>{addAccts(S.types,1)},'He starts shopping himself around'),
+   choice('Ignore it','bad',()=>{},'')]]:['A lawyer\'s letter',`${esc(d.r)} is suing: the salesman you hired had a non-compete. Their lawyer wants a settlement.`,[
+   choice(`Settle (${$m(W$(2))})`,'sec',()=>spend(W$(2),'opex'),'Make it go away'),
+   choice(`Fight it in court (${$m(W$(0.8))} legal)`,'sec',()=>{spend(W$(0.8),'opex');if(Math.random()<0.5){spend(W$(4),'opex');news('⚖️ We lost the non-compete case.')}else news('⚖️ The non-compete didn\'t hold up. We won.')},'50/50'),
+   choice('Let him go to end it','bad',()=>{},'Nothing gained'),
+   choice('Ignore it','bad',()=>{spend(W$(5),'opex');news('⚖️ Default judgment. Ouch.')},'Very bad idea')]]},
+  4:d=>{const R=S.rivals.find(r=>r.n===d.r)||bRiv();R.skill+=0.6;R.size*=1.5;return ['A national chain moves in',`A national distributor bought <b>${esc(d.r)}</b>. New trucks, deep pockets, and they're already calling your contractors.`,[
+   choice('Start a price war','bad',()=>{S.lines.forEach(k=>S.mg[k]=Math.max(0.05,S.mg[k]-0.03));bp('dem',1.03)},'Margins down 3 pts'),
+   choice('Double down on service: next-day delivery promise','good',()=>{bOpex('Next-day delivery promise',W$(0.008));bp('dlv',1.1);S.rep+=500},'Costs more, sets you apart'),
+   choice('Go niche: specialty products they won\'t stock','sec',()=>{S.lines.forEach(k=>{if(['orn','gate','comp','pvcdeck','lpsiding','steelframe'].includes(k))bp('dem_'+k,1.15)})},'Specialty lines +15%'),
+   choice('Ignore it','bad',()=>bp('dem',0.95),'Lose some share')]]}}},
+ builder:{ok:()=>S.week-(S.gw0||9)>=30,s:{
+  0:d=>{d.b=pick(LAST)+' '+pick(['Homes','Communities','Builders']);return ['A big builder comes calling',`<b>${esc(d.b)}</b> builds 300 homes a year in your area. They want one supplier for every fence and deck, at tight prices.`,[
+   choice('Sign a 3-year exclusive','sec',()=>{bp('dem',1.07);S.lines.forEach(k=>S.mg[k]=Math.max(0.05,S.mg[k]-0.015));bFlag('builderEx');bLater('builder',1,26,d)},'Huge volume, thinner margins'),
+   choice('Be their preferred supplier (not exclusive)','good',()=>{bp('dem',1.03);bLater('builder',1,26,d)},'Solid, lower risk'),
+   choice('Counter-offer at better margins','sec',()=>{if(Math.random()<0.5){bp('dem',1.04);news('🤝 '+d.b+' took the counter-offer.');bLater('builder',1,26,d)}else{news('🤝 '+d.b+' went with another yard.');bRiv().skill+=0.2}},'50/50 they accept'),
+   choice('Ignore it, too risky','bad',()=>{bRiv().skill+=0.25},'A rival gets them')]]},
+  1:d=>['The builder wants terms',`${esc(d.b)} wants to move from 30-day to 60-day terms. Their purchasing manager says "every other supplier said yes."`,[
+   choice('Give them 60 days','sec',()=>{bFlag('builder60');bLater('builder',2,26,d)},'Ties up a lot of cash'),
+   choice('45 days, final offer','good',()=>{bFlag('builder45');bLater('builder',2,26,d)},''),
+   choice('60 days, but with a personal guarantee','good',()=>{bFlag('builderPG');bLater('builder',2,26,d)},'Protects you if they fail'),
+   choice('Ignore it, keep 30 days','bad',()=>{bp('dem',0.98);bLater('builder',2,26,d)},'They shift some volume away')]],
+  2:d=>{const bad=econ(yearOf(S.week))<0.95||Math.random()<0.25;const f=S.bf||{};
+   if(bad){const loss=W$(f.builder60?8:f.builder45?5:3)*(f.builderPG?0.3:1);spend(loss,'opex');bp('dem',1/1.05);return ['The builder is in trouble',`${esc(d.b)} just stopped paying everyone. Housing slowed and they're overextended. We're owed money, and wrote off <b>${$m(loss)}</b>.${f.builderPG?' The personal guarantee covered most of it.':''}`,[
+    choice('File a lien on their projects','sec',()=>{earn(loss*0.4,'oth')},'Recover some of it'),
+    choice('Negotiate a payment plan','good',()=>{earn(loss*0.25,'oth');S.rep+=200},'Slow, keeps the relationship'),
+    choice('Buy their unfinished lots\' material contracts','sec',()=>{bp('dem',1.03)},'Pick up the work others drop'),
+    choice('Ignore it, write it all off','bad',()=>{},'')]]}
+   bp('dem',1.04);return ['The builder is booming',`${esc(d.b)} just bought land for 400 more homes. They want you to grow with them: a dedicated truck and a rep on their jobs.`,[
+    choice(`Dedicated truck and rep (${$m(W$(0.012))}/wk)`,'good',()=>{bOpex('Builder dedicated service',W$(0.012));bp('dem',1.06)},'Big growth'),
+    choice('Just a dedicated rep','sec',()=>{bOpex('Builder rep',W$(0.006));bp('dem',1.03)},''),
+    choice('Keep it as is','sec',()=>{},''),
+    choice('Ignore it','bad',()=>bp('dem',0.98),'They feel taken for granted')]]}}},
+ theft:{ok:()=>mdCrew().length>=3,s:{
+  0:d=>{const s=pick(mdCrew());d.s=s.name;return ['Caught on camera',`Security footage shows <b>${esc(s.name)}</b> loading a few boxes of hardware into a personal truck after close. Maybe ${$m(mdR(800*infl()))} worth, maybe more over time.`,[
+   choice('Fire them and call the police','sec',()=>{S.staff=S.staff.filter(x=>x!==s);mor(mdCrew(),-2);bFlag('strict')},'Sends a clear message'),
+   choice('Fire them quietly','sec',()=>{S.staff=S.staff.filter(x=>x!==s);if(Math.random()<0.35)bLater('theft',2,10,d)},'Might come back to bite'),
+   choice('Second chance, with conditions','good',()=>{s.morale=clamp((s.morale||60)-10,0,100);bLater('theft',1,26,{...d,id:s.id})},'Could go either way'),
+   choice('Ignore it','bad',()=>{bOpex('Yard theft',mdR(400*infl()),52);mor(mdCrew(),-5)},'The crew knows, and it keeps happening')]]},
+  1:d=>{const s=S.staff.find(x=>x.id===d.id);if(!s)return null;const good=Math.random()<0.6;return good?['The second chance paid off',`${esc(s.name)} has been the first one in and last one out since you gave them another shot. The crew's noticed too.`,[
+   choice('Promote them to yard lead','good',()=>{s.morale=100;bp('counter',1.03);mor(mdCrew(),3)},'Loyal for life'),choice('A raise and a thank-you','good',()=>{s.salary=Math.round((s.salary||3500)*1.08);s.morale=95},''),choice('Just say thanks','sec',()=>{s.morale=clamp(s.morale+10,0,100)},''),choice('Ignore it','bad',()=>{},'')]]
+   :['It happened again',`${esc(s.name)} got caught again, and this time it was a full pallet of composite boards.`,[
+   choice('Fire them and press charges','sec',()=>{S.staff=S.staff.filter(x=>x!==s);spend(mdR(4000*infl()),'opex')},''),choice('Fire them','sec',()=>{S.staff=S.staff.filter(x=>x!==s);spend(mdR(6000*infl()),'opex')},''),choice('Make them pay it back','sec',()=>{s.morale=20},'Awkward'),choice('Ignore it','bad',()=>{bOpex('Yard theft',mdR(900*infl()),52);mor(mdCrew(),-10)},'Everyone sees it')]]},
+  2:d=>['Bad mouthing',`${esc(d.s)} has been telling contractors at the coffee shop that you run a sloppy yard.`,[
+   choice('Send a lawyer\'s letter','sec',()=>spend(mdR(1500*infl()),'opex'),''),choice('Let your service do the talking','good',()=>{S.rep+=100},''),choice('Call the contractors yourself','good',()=>{S.accts.slice(0,5).forEach(a=>a.rel=Math.min(100,a.rel+3))},''),choice('Ignore it','bad',()=>{S.rep=Math.max(0,S.rep-400)},'')]]}},
+ neighbors:{ok:()=>true,s:{
+  0:d=>['Noise complaints',`New houses went up behind the yard. The neighbors are complaining about forklifts and backup alarms at 6am and have called the city twice.`,[
+   choice('Start loading at 7am instead','sec',()=>{bp('dlv',0.95);S.rep+=200},'Deliveries 5% slower, forever'),
+   choice(`Build a sound wall (${$m(mdR(35e3*infl(),1000))})`,'good',()=>{spend(mdR(35e3*infl(),1000),'oth');S.rep+=300},'Expensive, solves it'),
+   choice('Fight it at city council','sec',()=>{if(Math.random()<0.5)news('🏛️ The council sided with the yard. We were here first.');else bLater('neighbors',1,8,d)},'50/50'),
+   choice('Ignore it','bad',()=>bLater('neighbors',1,10,d),'')]],
+  1:d=>['Code violation',`The city issued a noise violation: <b>${$m(mdR(12e3*infl(),1000))}</b> fine, and no forklift work before 7am.`,[
+   choice('Pay it and comply','sec',()=>{spend(mdR(12e3*infl(),1000),'opex');bp('dlv',0.95)},''),
+   choice('Pay it, then build the sound wall','good',()=>{spend(mdR(47e3*infl(),1000),'opex')},'Back to 6am starts'),
+   choice('Appeal (legal fees)','sec',()=>{spend(mdR(8e3*infl(),1000),'opex');if(Math.random()<0.4)news('🏛️ Appeal won.');else{spend(mdR(12e3*infl(),1000),'opex');bp('dlv',0.95)}},'40% chance'),
+   choice('Ignore it','bad',()=>{spend(mdR(30e3*infl(),1000),'opex');bp('dlv',0.92);S.rep=Math.max(0,S.rep-500)},'The fines double')]]}},
+ brand:{ok:()=>S.lines.some(k=>['deck','comp','pvcdeck'].includes(k)),s:{
+  0:d=>{d.k=S.lines.find(k=>['comp','deck','pvcdeck'].includes(k));d.br=pick(['TerraPlank','Kestrel Decking','NorthGrain','Evermark']);return ['A new decking brand',`<b>${esc(d.br)}</b>, a startup composite brand, wants you as their exclusive dealer in the region. Great looking boards, good price, no track record.`,[
+   choice(`Go all in: exclusive + opening order (${$m(W$(3))})`,'sec',()=>{spend(W$(3),'cogs');bFlag('brand',2);bLater('brand',1,40,d)},'Big bet'),
+   choice(`Small test order (${$m(W$(0.5))})`,'good',()=>{spend(W$(0.5),'cogs');bFlag('brand',1);bLater('brand',1,40,d)},'Low risk'),
+   choice('Ask for 90-day terms and co-op ad money','sec',()=>{if(Math.random()<0.6){bFlag('brand',2);news('🪵 '+d.br+' agreed to terms and ad money.')}else bFlag('brand',0);bLater('brand',1,40,d)},'60% they agree'),
+   choice('Ignore it, stick with known brands','sec',()=>{bFlag('brand',0);bLater('brand',1,40,d)},'')]]},
+  1:d=>{const lv=(S.bf||{}).brand||0;const boom=Math.random()<0.55;
+   if(boom){if(lv)bp('dem_'+d.k,lv===2?1.2:1.08);else bRiv().skill+=0.3;return ['The brand took off',`${esc(d.br)} is the hot deck board this year. ${lv===2?'As their exclusive dealer, you\'re the only place to get it.':lv?'Your small test order sold out in a week.':'A rival picked up the line you passed on.'}`,[
+    choice('Order heavy for next season','good',()=>{if(lv)bp('dem_'+d.k,1.05)},''),choice('Ask for a better cost now that we\'re proven','sec',()=>{if(lv)S.mg[d.k]=Math.min(0.6,S.mg[d.k]+0.02)},''),choice('Build them a showroom display','good',()=>{spend(mdR(6e3*infl()),'opex');S.rep+=400},''),choice('Ignore it','sec',()=>{},'')]]}
+   if(!lv)return ['Dodged a bullet',`${esc(d.br)} just recalled two years of boards for delamination. The yard that took the line is drowning in warranty calls.`,[choice('Offer to help their customers','good',()=>{S.rep+=600;addAccts(['deckpro'],3)},'Win new accounts'),choice('Tell the story at the counter','sec',()=>{S.rep+=200},''),choice('Stay quiet','sec',()=>{},''),choice('Ignore it','sec',()=>{},'')]];
+   return ['Warranty recall',`${esc(d.br)} boards are delaminating. Contractors who bought from you want replacements, and the company is slow to pay claims.`,[
+    choice(`Stand behind every customer (${$m(W$(lv===2?3:0.8))})`,'good',()=>{spend(W$(lv===2?3:0.8),'opex');S.rep+=800;integ(4)},'Expensive, earns huge trust'),
+    choice('Split the cost with the contractors','sec',()=>{spend(W$(lv===2?1.5:0.4),'opex')},''),
+    choice('Point them to the manufacturer','bad',()=>{S.rep=Math.max(0,S.rep-1500);S.accts.forEach(a=>{if(a.type==='deckpro')a.rel=Math.max(0,a.rel-12)})},'Deck builders are furious'),
+    choice('Ignore it','bad',()=>{S.rep=Math.max(0,S.rep-2500);bp('dem_'+d.k,0.85)},'Your deck business takes a hit')]]}}},
+ pricefix:{ok:()=>S.rivals.length>0,s:{
+  0:d=>{const R=bRiv();d.r=R.n;return ['A friendly suggestion',`At the trade show, the owner of <b>${esc(R.n)}</b> pulls you aside: "We're killing each other on price. What if we just... didn't undercut each other on bids?"`,[
+   choice('Refuse and report it to the authorities','good',()=>{integ(6);S.rep+=300;mgSetB('counter',0.97,12);bLater('pricefix',1,40,d)},'Right thing, makes an enemy'),
+   choice('"Not interested." Walk away','good',()=>{integ(3)},''),
+   choice('Agree, quietly','bad',()=>{integ(-15);S.lines.forEach(k=>S.mg[k]=Math.min(0.6,S.mg[k]+0.03));bLater('pricefix',2,ri(30,60),d)},'That\'s illegal'),
+   choice('Ignore it, change the subject','sec',()=>{if(Math.random()<0.3)bLater('pricefix',2,ri(40,70),{...d,soft:1})},'He might take silence as a yes')]]},
+  1:d=>{const R=S.rivals.find(r=>r.n===d.r);if(R){R.skill-=0.5;R.size*=0.8}return ['Investigation results',`The investigation you tipped off ended in heavy fines for ${esc(d.r)} and two other yards. Contractors are hearing you were the one who said no.`,[
+   choice('Say nothing, stay humble','good',()=>{S.rep+=800},''),choice('Pick up their nervous customers','sec',()=>{addAccts(S.types,4)},''),choice('Make it a marketing angle','sec',()=>{S.rep+=400;integ(-1)},''),choice('Ignore it','sec',()=>{},'')]]},
+  2:d=>{const f=W$(d.soft?4:15);return ['Subpoena',`Investigators are looking into bid rigging between local yards, and your name came up${d.soft?', though you never actually agreed to anything':''}.`,[
+   choice('Cooperate fully','good',()=>{spend(f*0.4,'opex');S.rep=Math.max(0,S.rep-1000);integ(5)},'Smaller fine, honest'),
+   choice(`Lawyer up (${$m(W$(2))})`,'sec',()=>{spend(W$(2),'opex');if(Math.random()<(d.soft?0.8:0.4))news('⚖️ The case against us was dropped.');else{spend(f,'opex');S.rep=Math.max(0,S.rep-3000)}},'Coin flip'),
+   choice('Settle quietly','sec',()=>{spend(f*0.7,'opex')},''),
+   choice('Ignore it','bad',()=>{spend(f*1.5,'opex');S.rep=Math.max(0,S.rep-5000);integ(-10)},'Never ignore a subpoena')]]}}},
+ press:{ok:()=>true,s:{
+  0:d=>['Local news wants a story',`A TV reporter wants to do a feature on local businesses that survived the last few years. They asked about your yard.`,[
+   choice('Do the interview yourself','good',()=>{S.rep+=600+Math.round(((S.founder.sk||{}).sales||50)*8)},'Reputation up'),
+   choice(`Sponsor fencing for the veterans home build (${$m(mdR(8e3*infl(),1000))})`,'good',()=>{spend(mdR(8e3*infl(),1000),'opex');S.rep+=1500;integ(3);bLater('press',1,20,d)},'Great story, may pay off later'),
+   choice('Send your best salesperson','sec',()=>{S.rep+=300},''),
+   choice('Ignore it, no time for TV','sec',()=>{},'')]],
+  1:d=>['The veterans remember',`The veterans group from the fence build has been sending people your way. A local VFW wants to know if you'd hire veterans for the yard.`,[
+   choice('Partner on a hiring program','good',()=>{mor(mdCrew(),3);bp('cb',0.95);S.rep+=500},'Steady, reliable crew'),choice('Give them a contractor discount','sec',()=>{addAccts(S.types,3)},''),choice('Thank them warmly','sec',()=>{S.rep+=100},''),choice('Ignore it','bad',()=>{S.rep=Math.max(0,S.rep-200)},'')]]}},
+ pos:{ok:()=>S.week-(S.gw0||9)>=20,s:{
+  0:d=>['Time for new software',`The counter system is old and slow. Tickets get lost, inventory counts drift, and contractors wait. A vendor pitches a full new system.`,[
+   choice(`Full new system, go live in a month (${$m(W$(2))})`,'good',()=>{spend(W$(2),'oth');mgSetB('counter',0.9,6);bLater('pos',1,7,d)},'Rough rollout, big payoff'),
+   choice(`Phased rollout over 4 months (${$m(W$(2.6))})`,'sec',()=>{spend(W$(2.6),'oth');bLater('pos',2,16,d)},'Smooth, slower'),
+   choice(`Cheap add-on to the old system (${$m(W$(0.5))})`,'sec',()=>{spend(W$(0.5),'oth');bp('counter',1.02)},'Small gain'),
+   choice('Ignore it, it still works','bad',()=>bLater('pos',3,ri(40,60),d),'For now')]],
+  1:d=>['Rollout chaos',`Go-live week: tickets printing wrong, the crew is frustrated, and contractors are waiting.`,[
+   choice(`Bring the vendor trainers on site (${$m(W$(0.4))})`,'good',()=>{spend(W$(0.4),'opex');bp('counter',1.06);bp('cb',0.9)},'Fixes it fast'),choice('Push through it','sec',()=>{mor(mdCrew(),-6);bp('counter',1.05)},'Crew suffers, works out'),choice('Run paper backup for a month','sec',()=>{mgSetB('counter',0.95,4);bp('counter',1.05)},''),choice('Ignore it','bad',()=>{mor(mdCrew(),-10);bp('counter',1.02)},'Never quite right')]],
+  2:d=>['New system is live',`The phased rollout went smoothly. Counts are accurate and the counter is faster.`,[
+   choice('Add online ordering for contractors','good',()=>{spend(W$(0.8),'oth');bp('dem',1.03)},''),choice('Use the data to tighten stock levels','good',()=>{bp('cb',0.9)},''),choice('Leave it as is','sec',()=>{bp('counter',1.05)},''),choice('Ignore it','sec',()=>{bp('counter',1.04)},'')]],
+  3:d=>['The system crashed',`The old counter system died on a Monday morning in peak season. Paper tickets and calculators all week.`,[
+   choice(`Emergency replacement (${$m(W$(3))})`,'sec',()=>{spend(W$(3),'oth');mgSetB('counter',0.7,2);bp('counter',1.05)},''),choice('Patch it back together','sec',()=>{spend(W$(0.5),'opex');mgSetB('counter',0.8,2)},''),choice('Run on paper and shop around','bad',()=>{mgSetB('counter',0.75,4)},''),choice('Ignore it','bad',()=>{mgSetB('counter',0.6,4)},'')]]}},
+ lot:{ok:()=>true,s:{
+  0:d=>{const c=W$(25);return ['The lot next door',`The empty lot next to the yard just went up for sale. More room for stock, but it's not cheap.`,[
+   choice(`Buy it (${$m(c)})`,'good',()=>{if(S.money<c){news('🏦 Not enough cash to buy the lot.');return}spend(c,'oth');S.bYard=(S.bYard||1)*1.3},'+30% yard space, forever'),
+   choice(`Lease it (${$m(W$(0.015))}/wk)`,'sec',()=>{bOpex('Lot lease',W$(0.015));S.bYard=(S.bYard||1)*1.25},'+25% yard space'),
+   choice('Share it with a landscape supply yard','sec',()=>{bOpex('Shared lot',W$(0.006));S.bYard=(S.bYard||1)*1.1;bp('dem',1.02)},'Cross-traffic'),
+   choice('Ignore it, we\'re fine','sec',()=>{if(Math.random()<0.5)bLater('lot',1,20,d)},'Someone else might buy it')]]},
+  1:d=>{const R=bRiv();return ['A rival moves in next door',`<b>${esc(R.n)}</b> bought the lot next door and is opening a satellite yard. Contractors will literally drive past you to get there.`,[
+   choice('Price match anything they advertise','sec',()=>{S.lines.forEach(k=>S.mg[k]=Math.max(0.05,S.mg[k]-0.02))},''),choice('Faster counter: add a second will-call lane','good',()=>{spend(mdR(20e3*infl(),1000),'oth');bp('counter',1.04)},''),choice('Make your yard the nicer place to shop','good',()=>{spend(mdR(15e3*infl(),1000),'oth');S.rep+=600},''),choice('Ignore it','bad',()=>bp('counter',0.94),'Counter sales −6%')]]}}},
+ intern:{ok:()=>S.accts.length>0,s:{
+  0:d=>{const A=bAcc();d.a=A.name;d.aid=A.id;d.n=pick(FIRST);return ['A favor for a big customer',`The owner of <b>${esc(A.name)}</b>, one of your biggest accounts, asks if his daughter ${esc(d.n)} can work at the yard this summer. She's 19 and studying business.`,[
+   choice('Put her on the counter','good',()=>{A.rel=Math.min(100,A.rel+15);bLater('intern',1,52,d)},''),choice('Have her shadow you','good',()=>{A.rel=Math.min(100,A.rel+18);bLater('intern',1,52,{...d,mentor:1})},'She learns the business'),choice('Yard crew, start at the bottom','sec',()=>{A.rel=Math.min(100,A.rel+8);bLater('intern',1,52,d)},''),choice('Ignore it, we don\'t hire family of customers','bad',()=>{A.rel=Math.max(0,A.rel-12)},'He\'s a bit hurt')]]},
+  1:d=>['She\'s back',`${esc(d.n)} graduated and wants a full-time job${d.mentor?'. She says the summer shadowing you was the best thing she ever did':''}. Her dad would be thrilled.`,[
+   choice('Hire her as an outside sales rep','good',()=>{addAccts(S.types,d.mentor?4:2);bp('dem',1.02)},'She knows everyone'),choice('Hire her as a buyer','good',()=>{bp('cb',0.93)},''),choice('Recommend her to a friend\'s company','sec',()=>{},''),choice('Ignore it','bad',()=>{const A=S.accts.find(a=>a.id===d.aid);if(A)A.rel=Math.max(0,A.rel-15)},'Her dad notices')]]}}};
+function brWeek(){if(!S||S.ceo||(S.corp&&S.corp.hq))return;
+ (S.bOpex||[]).forEach(o=>spend(o.amt,'opex'));if(S.bOpex)S.bOpex=S.bOpex.filter(o=>S.week<o.until);
+ if(MQ.length||MG)return;S.brq=S.brq||[];const due=S.brq.find(q=>S.week>=q.at);
+ if(due){S.brq=S.brq.filter(q=>q!==due);return brFire(due.id,due.st,due.d)}
+ if(S.week<(S.gw0==null?S.week:S.gw0)+12)return;if(S.brNext==null)S.brNext=S.week+ri(4,8);if(S.week<S.brNext)return;S.brNext=S.week+ri(9,15);
+ S.bdone=S.bdone||{};const pool=Object.keys(BCH).filter(k=>!S.bdone[k]&&BCH[k].ok());if(!pool.length)return;const k=pick(pool);S.bdone[k]=S.week;brFire(k,0,{})}
+function brFire(id,st,d){const r=BCH[id].s[st](d);if(!r)return;modal('⚖️ Decision: '+r[0],`<p>${r[1]}</p>${st?'<p class="mut small">↪ This follows from an earlier decision.</p>':''}`,r[2])}
+const _wkBR=weekly;weekly=function(){_wkBR();try{brWeek()}catch(e){console.error(e)}};
+function brJournal(){const L=(S.bOpex||[]);const P=S.bPerm||{};const lab={dem:'Demand',counter:'Counter sales',dlv:'Deliveries',cb:'Callbacks'};const pe=Object.keys(P).filter(k=>Math.abs(P[k]-1)>0.005);
+ if(!L.length&&!pe.length&&!S.bYard)return '';return `<div class="card"><h2>⚖️ Lasting effects of your decisions</h2>${pe.map(k=>`<div class="between small"><span>${lab[k]||(k.startsWith('dem_')?LN(k.slice(4)).n+' demand':k)}</span><b class="${(P[k]>1)!==(k==='cb')?'good':'warn'}">${P[k]>1?'+':''}${Math.round((P[k]-1)*100)}%</b></div>`).join('')}${S.bYard&&S.bYard!==1?`<div class="between small"><span>Yard space</span><b class="good">+${Math.round((S.bYard-1)*100)}%</b></div>`:''}${L.map(o=>`<div class="between small"><span>${esc(o.n)}</span><b class="warn">${$m(o.amt)}/wk${o.until<1e8?` · ${o.until-S.week} wks left`:''}</b></div>`).join('')}</div>`}
+{const _bh=businessHtml;businessHtml=function(){return _bh()+brJournal()}}
+// 4th option for the original manager's calls
+const MD4={sat:()=>choice('Open Saturdays, but rotate the crew','good',()=>{spend(mdR(mdCrew().length*170*infl())*12,'opex');mgSetB('counter',1.09,12)},'Counter +9%, morale steady'),
+ raise:()=>choice('An extra week of paid time off instead','sec',()=>{const L=mdCrew();const s=L.sort((a,b)=>(a.morale||60)-(b.morale||60))[0];if(s)s.morale=clamp((s.morale||60)+(Math.random()<0.5?10:-6),0,100);spend(mdR(900*infl()),'opex')},'Cheaper, might not be enough'),truckload:()=>choice('Take it if they give us 60-day terms','sec',()=>{if(Math.random()<0.5)buyStock(topLine(),Math.round(Math.max(20,(S.tgt[topLine()]||40)*1.5)),true,0.06)},'50% they agree'),
+ dead:()=>choice('Bundle it free with big orders','sec',()=>{const k=mdLines().filter(k=>S.inv[k].u>(S.tgt[k]||0)*2)[0];if(k){S.inv[k].u*=0.7;S.accts.forEach(a=>a.rel=Math.min(100,a.rel+2))}},'Goodwill, no cash'),
+ pastdue:()=>choice('Ship half, the rest when they pay','good',()=>{},'Middle ground'),
+ forklift:()=>choice(`Lease a replacement forklift (${$m(mdR(900*infl()))}/wk)`,'sec',()=>{bOpex('Forklift lease',mdR(900*infl()));bp('dlv',1.03)},'Newer, faster'),
+ safety:()=>choice('Buy better forks and load straps','good',()=>{spend(mdR(3000*infl()),'opex');bp('cb',0.97)},'Lasting fix'),
+ truck:()=>null,feud:()=>choice('Let your yard lead handle it','sec',()=>{if(Math.random()<0.6)mor(mdCrew(),2);else mor(mdCrew(),-4)},''),
+ price:()=>choice('Raise only on small orders','good',()=>{const k=topLine();S.mg[k]=Math.min(0.6,S.mg[k]+0.015)},'Protects contractor relationships'),
+ temp:()=>choice('Ask the office staff to help in the yard','sec',()=>{mgSetB('dlv',1.05,10);mor(mdCrew(),-2)},''),
+ return:()=>choice('Offer store credit instead','sec',()=>{S.rep+=40},'No cash out'),
+ shrink:()=>choice('Do a full wall-to-wall count','sec',()=>{const k=pick(mdLines());S.inv[k].u=Math.max(0,S.inv[k].u*0.97);mor(mdCrew(),-2)},'Find out what\'s real')};
+MDESK.forEach(E=>{const f=E.f;E.f=function(){const r=f.apply(this,arguments);const x=MD4[E.id]&&MD4[E.id]();if(x&&r[2].length<4)r[2].splice(r[2].length-1,0,x);return r}});
+// ---- more storylines ----
+Object.assign(BCH,{
+ storm:{ok:()=>true,s:{
+  0:d=>['Windstorm coming',`The weather service says 70 mph winds hit the region Thursday night. Every fence contractor knows what that means: thousands of broken fences by Friday morning.`,[
+   choice(`Stock up hard on posts and panels (${$m(W$(2))})`,'good',()=>{spend(W$(2),'cogs');mgSetB('counter',1.25,6);d.c=1;bLater('storm',1,6,d)},'Ready for the rush'),
+   choice('Raise prices 15% while demand spikes','bad',()=>{S.lines.forEach(k=>S.mg[k]=Math.min(0.6,S.mg[k]+0.06));d.c=2;bLater('storm',1,6,d)},'Big margins, people remember'),
+   choice('Priority list: regular contractors first','good',()=>{S.accts.forEach(a=>a.rel=Math.min(100,a.rel+4));mgSetB('counter',1.12,6);d.c=3;bLater('storm',1,6,d)},'Loyalty over walk-ins'),
+   choice('Ignore it, business as usual','sec',()=>{mgSetB('counter',1.05,6);d.c=4;bLater('storm',1,6,d)},'You\'ll run short')]],
+  1:d=>{if(d.c===2)S.lines.forEach(k=>S.mg[k]=Math.max(0.05,S.mg[k]-0.06));const T={1:'You had stock when nobody else did. Contractors drove across town to buy from you.',2:'The storm surge pricing made the local paper: "Fence yard gouges storm victims."',3:'Your regulars got their material first. Walk-ins grumbled, contractors noticed.',4:'You sold out of posts by Saturday noon and spent two weeks on backorder.'};
+   return ['After the storm',T[d.c],[
+   choice('Thank-you BBQ for the contractors who came in','good',()=>{spend(mdR(4e3*infl(),1000),'opex');S.accts.forEach(a=>a.rel=Math.min(100,a.rel+3))},''),
+   choice(d.c===2?'Public apology and refunds':'Run a "storm ready" promo next season','sec',()=>{if(d.c===2){spend(W$(0.5),'opex');S.rep+=300}else bp('dem',1.02)},''),
+   choice('Write a storm playbook for next time','good',()=>{bFlag('stormPlan');bp('dlv',1.02)},'Ready next time'),
+   choice('Ignore it, move on','sec',()=>{if(d.c===2)S.rep=Math.max(0,S.rep-2500);if(d.c===4)bp('dem',0.98)},'')]]}}},
+ burnout:{ok:()=>S.week-(S.gw0||9)>=40,s:{
+  0:d=>['Running on empty',`You've worked 70-hour weeks for months. You missed your kid's game again, and the crew says you look exhausted.`,[
+   choice(`Hire a general manager (${$m(mdR(9e3*infl()))}/mo)`,'good',()=>{bOpex('General manager',mdR(2100*infl()));mor(mdCrew(),3);d.c=1;bLater('burnout',1,30,d)},'Expensive, sustainable'),
+   choice('Take two weeks off, the crew can handle it','good',()=>{mgSetB('counter',0.93,2);d.c=2;bLater('burnout',1,30,d)},'Short dip, recharged'),
+   choice('Hand more to your assistant manager','sec',()=>{S.dele=true;d.c=3;bLater('burnout',1,30,d)},'They make the small calls'),
+   choice('Ignore it, push through','bad',()=>{d.c=4;bLater('burnout',1,14,d)},'Something will give')]],
+  1:d=>{const T={1:'The GM you hired is excellent, and now wants a small ownership stake to stay long-term.',2:'You came back sharp. Two of your best ideas this year came on that trip.',3:'Your assistant manager has been making good calls and wants a raise and a real title.',4:'You got sick and were out for three weeks. The yard missed you badly.'};if(d.c===4){mgSetB('counter',0.85,3);mgSetB('cb',1.2,6)}
+   return ['How it played out',T[d.c],[
+   choice(d.c===1?'Give them 5% of the profits':'Make time off a yearly rule','good',()=>{if(d.c===1)bOpex('GM profit share',W$(0.01));bp('cb',0.96)},''),
+   choice(d.c===1?'Bigger salary instead':'Give your #2 a raise and title','sec',()=>{bOpex(d.c===1?'GM raise':'Assistant raise',mdR(500*infl()));mor(mdCrew(),3)},''),
+   choice('Set a 55-hour weekly limit for yourself','good',()=>{bp('counter',1.02)},'Healthier, steadier'),
+   choice('Ignore it, back to the grind','bad',()=>{if(d.c===1){bp('cb',1.05);news('🚪 Your GM took a job at a rival.')}mor(mdCrew(),-3)},'')]]}}},
+ shortage:{ok:()=>S.lines.length>2,s:{
+  0:d=>{d.k=topLine();return ['Mill allocation cut',`Your ${LN(d.k).n} mill is cutting every dealer's allocation 40% for the next quarter. Contractors are already calling.`,[
+   choice('Buy on the spot market at 20% over cost','sec',()=>{spend(W$(1.2),'cogs');d.c=1;bLater('shortage',1,13,d)},'Keep shelves full'),
+   choice('Ration it to your best contractors','good',()=>{S.accts.slice(0,8).forEach(a=>a.rel=Math.min(100,a.rel+5));bp('dem_'+d.k,0.95);d.c=2;bLater('shortage',1,13,d)},'Loyalty move'),
+   choice('Import from overseas (8-week lead time)','sec',()=>{spend(W$(0.8),'cogs');d.c=3;bLater('shortage',1,13,d)},'Cheaper, slower, risky'),
+   choice('Ignore it, sell what we get','bad',()=>{bp('dem_'+d.k,0.92);d.c=4;bLater('shortage',1,13,d)},'Lose share')]]},
+  1:d=>{const T={1:'Allocations are back to normal. You kept every shelf full the whole time; contractors noticed.',2:'Allocations are back. Your top contractors are fiercely loyal now; walk-ins went elsewhere for a while.',3:Math.random()<0.6?'The import shipment landed on time and you had stock when others didn\'t.':'The import shipment sat in port for 6 weeks and showed up after the shortage ended.',4:'The shortage is over. You lost a few contractors to yards that found stock.'};
+   return ['Shortage is over',T[d.c],[
+   choice('Lock in a second supplier','good',()=>{bOpex('Second supplier minimums',W$(0.003));bp('dem_'+d.k,1.04)},'Never get caught again'),
+   choice('Build safety stock','sec',()=>{S.tgt[d.k]=Math.round((S.tgt[d.k]||20)*1.25)},'Higher stock targets'),
+   choice('Win back lost contractors with a promo','sec',()=>{spend(W$(0.3),'opex');addAccts(S.types,2)},''),
+   choice('Ignore it, back to normal','sec',()=>{if(d.c===4)bp('dem_'+d.k,0.97)},'')]]}}},
+ investor:{ok:()=>S.week-(S.gw0||9)>=60,s:{
+  0:d=>{d.v=W$(30);return ['An investor calls',`A private equity firm wants to buy 30% of the company for <b>${$m(d.v)}</b>. They say they'll "help you scale."`,[
+   choice('Take the deal','sec',()=>{earn(d.v,'oth');bOpex('Investor profit share',W$(0.02));d.c=1;bLater('investor',1,40,d)},'Cash now, partners forever'),
+   choice('Counter: 20% with no board seat','sec',()=>{if(Math.random()<0.5){earn(d.v*0.7,'oth');bOpex('Investor profit share',W$(0.012));d.c=2;bLater('investor',1,40,d)}else news('💼 The investors walked.')},'50/50'),
+   choice('Take a bank loan instead','good',()=>{earn(d.v*0.5,'oth');bOpex('Expansion loan',W$(0.025),104)},'No partners, two years of payments'),
+   choice('Ignore it, we stay independent','sec',()=>{integ(1)},'')]]},
+  1:d=>['The board wants changes',`Your investors want faster growth: cut the slow lines, raise prices 2%, and stop "giving away" service.`,[
+   choice('Do what they want','sec',()=>{S.lines.forEach(k=>S.mg[k]=Math.min(0.6,S.mg[k]+0.02));S.rep=Math.max(0,S.rep-800);mor(mdCrew(),-5);bLater('investor',2,52,{...d,obey:1})},'More profit, less heart'),
+   choice('Meet halfway: raise prices, keep the service','good',()=>{S.lines.forEach(k=>S.mg[k]=Math.min(0.6,S.mg[k]+0.01));bLater('investor',2,52,d)},''),
+   choice('Push back with a 3-year plan','good',()=>{bp('dem',1.02);bLater('investor',2,52,d)},'Win them over with numbers'),
+   choice('Ignore them','bad',()=>{mor(mdCrew(),-2);bLater('investor',2,30,{...d,angry:1})},'They won\'t like that')]],
+  2:d=>{d.v=d.v||W$(30);return ['The investors want out',d.angry?'The investors are frustrated and want to sell their stake to a national chain. You have the right to buy it back first.':`The fund's term is ending and they want to cash out their stake${d.obey?'. Profits are up, so it\'s worth more':''}.`,[
+   choice(`Buy them out (${$m(d.v*(d.obey?1.6:1.3))})`,'good',()=>{spend(d.v*(d.obey?1.6:1.3),'oth');S.bOpex=(S.bOpex||[]).filter(o=>!/Investor/.test(o.n));integ(2)},'All yours again'),
+   choice('Find a friendlier investor to replace them','sec',()=>{S.bOpex=(S.bOpex||[]).filter(o=>!/Investor/.test(o.n));bOpex('New partner share',W$(0.012))},''),
+   choice('Let them sell to the national chain','bad',()=>{bRiv().skill+=0.4;S.rep=Math.max(0,S.rep-1000)},'A competitor owns part of you'),
+   choice('Ignore it','bad',()=>{spend(W$(3),'opex')},'Lawyers get involved')]]}}},
+ apprentice:{ok:()=>S.week-(S.gw0||9)>=24,s:{
+  0:d=>['The trade school calls',`The local trade school wants businesses to sponsor a fence-and-deck installer apprenticeship. They'd send students to your yard two days a week.`,[
+   choice(`Sponsor the whole program (${$m(mdR(15e3*infl(),1000))}/yr)`,'good',()=>{bOpex('Apprenticeship program',mdR(290*infl()));bp('cb',0.94);S.rep+=600},'Future installers who know your yard'),
+   choice('Take a couple of students','good',()=>{mor(mdCrew(),3);bp('cb',0.97)},''),
+   choice('Donate some material instead','sec',()=>{spend(mdR(3e3*infl()),'opex');S.rep+=200},''),
+   choice('Ignore it, no time to train kids','sec',()=>{},'')]]}}});
 
 if(typeof document!=='undefined'&&document.getElementById('main'))addEventListener('DOMContentLoaded',boot);
 </script>
